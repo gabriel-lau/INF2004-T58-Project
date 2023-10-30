@@ -208,22 +208,22 @@ The map needs to show obstacle is detected and then will need to reflect on the 
                      <h3>Timer: </h3><span><!--#timer-->s</span>
                  </div>
                  <div class="monitor-barcode">
-                     <h3>Barcode Result: </h3><span><!--#barcode --></span> <!-- IR Sensor -->
+                     <h3>Barcode Result: </h3><span><!--#barcode--></span> <!-- IR Sensor -->
                  </div>
              </div>
  
              <div class="pid">
                  <div class="pid-distance">
-                     <h3>Distance: </h3><span><!--#distance -->m</span> <!-- Ultrasonic -->
+                     <h3>Distance: </h3><span><!--#distance-->m</span> <!-- Ultrasonic -->
                  </div>
                  <div class="pid-speed">
-                     <h3>Speed: </h3><span><!--#speed -->m/s</span> <!-- Wheel Encoder -->
+                     <h3>Speed: </h3><span><!--#speed-->m/s</span> <!-- Wheel Encoder -->
                  </div>
                  <div class="pid-acceleration">
-                     <h3>Acceleration: </h3><span><!--#acceleration -->m/s<sup>2</sup></span> <!-- Wheel Encoder -->
+                     <h3>Acceleration: </h3><span><!--#acceleration-->m/s<sup>2</sup></span> <!-- Wheel Encoder -->
                  </div>
                  <div class="pid-steering">
-                     <h3>Steering: </h3><span><!--#steering -->°</span> <!-- Magnometer -->
+                     <h3>Steering: </h3><span><!--#steering-->°</span> <!-- Magnometer -->
                  </div>
              </div>
  

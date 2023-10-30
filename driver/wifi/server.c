@@ -46,5 +46,5 @@ int main() {
     printf("\n");
 
     // Infinite loop
-    while(;;);
+    for (;;);
 }

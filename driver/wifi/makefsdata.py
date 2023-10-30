@@ -2,13 +2,12 @@
 
 # This script is by @rspeir on GitHub: 
 # https://github.com/krzmaz/pico-w-webserver-example/pull/1/files/4b3e78351dd236f213da9bebbb20df690d470476#diff-e675c4a367e382db6f9ba61833a58c62029d8c71c3156a9f238b612b69de279d
-# Renamed output to avoid linking incorrect file
 
 import os
 import binascii
 
 #Create file to write output into
-output = open('fsdata.c', 'w') 
+output = open('makefsdata.c', 'w') 
 
 #Traverse directory, generate list of files
 files = list()

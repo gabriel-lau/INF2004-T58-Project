@@ -89,4 +89,4 @@
 #define LWIP_HTTPD_SSI 1
 #define LWIP_HTTPD_CGI 1
 #define LWIP_HTTPD_SSI_INCLUDE_TAG 0
-#define HTTPD_FSDATA_FILE "fsdata.c"
+#define HTTPD_FSDATA_FILE "makefsdata.c"
