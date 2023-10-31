@@ -46,5 +46,10 @@ int main() {
     printf("\n");
 
     // Infinite loop
-    for (;;);
+    // for (;;);
+    while (1){
+        fgets(console_input, sizeof(console_input), stdin);
+        printf("entered: %s", console_input);
+    };  
+
 }

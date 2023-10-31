@@ -22,6 +22,7 @@ const char * cgi_car_handler(int iIndex, int iNumParams, char *pcParam[], char *
         } else if (strcmp(pcParam[i] , "time") == 0){
             // Look at the 'time' argument to perform time-specific actions
             printf("start in %ss\n", pcValue[i]);
+            snprintf(cgi_result, sizeof(cgi_result), pcValue[i]);
             timeFound = 1;
         } else if (strcmp(pcParam[i] , "speed") == 0){
             // Look at the 'speed' argument to perform speed-specific actions
