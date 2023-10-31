@@ -3,7 +3,7 @@
 #include "hardware/i2c.h"
 
 #define LSM303DLHC_ADDRESS 0x19 // 7-bit I2C address of the LSM303DLHC accelerometer/magnetometer
-#define MAGNETOMETER_OFFSET 3  // Offset for magnetometer registers
+#define MAG_ADDRESS 0x1E
 
 void lsm303dlhc_init(i2c_inst_t *i2c)
 {
@@ -12,8 +12,8 @@ void lsm303dlhc_init(i2c_inst_t *i2c)
     gpio_set_function(0, GPIO_FUNC_I2C);
     gpio_set_function(1, GPIO_FUNC_I2C);
     i2c_set_slave_mode(i2c, false, 0);
-    gpio_set_pulls(0, true, true); // Set pull-ups on GPIO 2
-    gpio_set_pulls(1, true, true); // Set pull-ups on GPIO 3
+    gpio_set_pulls(0, true, true); // Set pull-ups on GPIO 0
+    gpio_set_pulls(1, true, true); // Set pull-ups on GPIO 1
 
     // Initialize the LSM303DLHC accelerometer
     uint8_t data[2];
@@ -22,9 +22,9 @@ void lsm303dlhc_init(i2c_inst_t *i2c)
     i2c_write_blocking(i2c, LSM303DLHC_ADDRESS, data, 2, false);
 
     // Initialize the LSM303DLHC magnetometer
-    data[0] = 0x02 + MAGNETOMETER_OFFSET; // CRA_REG_M register
+    data[0] = 0x02; // CRA_REG_M register
     data[1] = 0x00; // Set the data rate to the default (0.75 Hz)
-    i2c_write_blocking(i2c, LSM303DLHC_ADDRESS, data, 2, false);
+    i2c_write_blocking(i2c, MAG_ADDRESS, data, 2, false);
 }
 void lsm303dlhc_read_acceleration(i2c_inst_t *i2c, int16_t *x, int16_t *y, int16_t *z)
 {
@@ -41,14 +41,14 @@ void lsm303dlhc_read_acceleration(i2c_inst_t *i2c, int16_t *x, int16_t *y, int16
 void lsm303dlhc_read_magnetometer(i2c_inst_t *i2c, int16_t *x, int16_t *y, int16_t *z)
 {
     uint8_t data[6];
-    data[0] = 0x03 + MAGNETOMETER_OFFSET; // OUT_X_H_M address
-    i2c_write_blocking(i2c, LSM303DLHC_ADDRESS, data, 1, true);
-    i2c_read_blocking(i2c, LSM303DLHC_ADDRESS, data, 6, false);
+    data[0] = 0x03; // OUT_X_H_M address
+    i2c_write_blocking(i2c, MAG_ADDRESS, data, 1, true);
+    i2c_read_blocking(i2c, MAG_ADDRESS, data, 6, false);
 
     // Extract magnetometer values
-    *x = (int16_t)((data[0] << 8) | data[1]);
-    *z = (int16_t)((data[2] << 8) | data[3]);
-    *y = (int16_t)((data[4] << 8) | data[5]);
+    *x = (int16_t)((data[1] << 8) | data[0]);
+    *z = (int16_t)((data[3] << 8) | data[2]);
+    *y = (int16_t)((data[5] << 8) | data[4]);
 }
 
 int main()
