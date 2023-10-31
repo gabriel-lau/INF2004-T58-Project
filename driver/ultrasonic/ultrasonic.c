@@ -5,10 +5,34 @@
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
 
-const int TRIG_PIN = 28;
-const int ECHO_PIN = 27;
+const int TRIG_PIN = 0;
+const int ECHO_PIN = 1;
 
 int timeout = 26100;
+
+uint64_t pulseLength = 0; 
+
+absolute_time_t startTime;
+absolute_time_t endTime;
+uint64_t pulseLength;
+
+
+void gpio_distance_callback(uint gpio, uint32_t events) {
+    if (events & GPIO_IRQ_EDGE_RISE)
+    {
+        startTime = get_absolute_time();
+        //printf("Start time: %lld\n", startTime);
+    }
+    else if (events & GPIO_IRQ_EDGE_FALL)
+    {
+        printf("Start time: %lld\n", startTime);
+        endTime = get_absolute_time();
+        printf("End time: %lld\n", endTime);
+        pulseLength = absolute_time_diff_us(startTime, endTime);
+        int distance = pulseLength / 29 / 2;
+        printf("Distance: %d cm\n", distance);
+    }
+}
 
 void setupUltrasonicPins(uint trigPin, uint echoPin)
 {
@@ -18,44 +42,30 @@ void setupUltrasonicPins(uint trigPin, uint echoPin)
     gpio_set_dir(echoPin, GPIO_IN);
 }
 
-uint64_t getPulse(uint trigPin, uint echoPin)
+void getPulse(uint trigPin, uint echoPin)
 {
     gpio_put(trigPin, 1);
     sleep_us(10);
     gpio_put(trigPin, 0);
 
-    uint64_t width = 0;
+    //uint64_t width = 0;
 
-    while (gpio_get(echoPin) == 0) tight_loop_contents();
-    absolute_time_t startTime = get_absolute_time();
-    while (gpio_get(echoPin) == 1) 
-    {
-        width++;
-        sleep_us(1);
-        if (width > timeout) return 0;
-    }
-    absolute_time_t endTime = get_absolute_time();
+    gpio_set_irq_enabled_with_callback(echoPin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_distance_callback);
     
-    return absolute_time_diff_us(startTime, endTime);
 }
 
-uint64_t getCm(uint trigPin, uint echoPin)
+void getCm(uint trigPin, uint echoPin)
 {
-    uint64_t pulseLength = getPulse(trigPin, echoPin);
-    return pulseLength / 29 / 2;
-}
-
-uint64_t getInch(uint trigPin, uint echoPin)
-{
-    uint64_t pulseLength = getPulse(trigPin, echoPin);
-    return (long)pulseLength / 74.f / 2.f;
+    getPulse(trigPin, echoPin);
+    //return pulseLength / 29 / 2;
 }
 
 int main() {
     stdio_init_all();
-    setupUltrasonicPins(TRIG_PIN, ECHO_PIN);
-    while (1) {
-        int distance = getCm(TRIG_PIN, ECHO_PIN);
-        printf("Distance: %d cm\n", distance);
+    while (1)
+    {
+        setupUltrasonicPins(TRIG_PIN, ECHO_PIN);
+        getCm(TRIG_PIN, ECHO_PIN);
+        sleep_ms(1000);
     }
 }
