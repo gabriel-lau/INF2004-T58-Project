@@ -17,10 +17,10 @@ int main() {
     while (1) {
         if (gpio_get(lineTrackingPin)==0) {
             // The line tracking sensor detected a line
-            printf("Value of 0 detected\n");
+            printf("No Black line detected\n");
         }else if (gpio_get(lineTrackingPin)==1)
         {
-            printf("Value of 1 detected\n");
+            printf("Black line detected\n");
         }
          else {
             // The line tracking sensor didn't detect a line
