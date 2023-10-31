@@ -15,10 +15,10 @@ const int INPUT_1_RIGHT = 19;
 const int INPUT_2_RIGHT = 18;
 const int PWM_RIGHT = 17;
 
-//uint16_t PWM_LEFT_CYCLE = 32768;
-//uint16_t PWM_RIGHT_CYCLE = 32768;
-uint16_t PWM_LEFT_CYCLE = 65535;
-uint16_t PWM_RIGHT_CYCLE = 65535;
+uint16_t PWM_LEFT_CYCLE = 32768;
+uint16_t PWM_RIGHT_CYCLE = 32768;
+//uint16_t PWM_LEFT_CYCLE = 65535;
+//uint16_t PWM_RIGHT_CYCLE = 65535;
 
 int direction = -1;
 
