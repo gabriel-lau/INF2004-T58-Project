@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROGRAM_NAME pico_w_webserver)
+set(PROGRAM_NAME wifi)
 set(PICO_BOARD pico_w)
 
 include(../pico_sdk_import.cmake)
 
-project(pico_w_webserver)
+project(${PROGRAM_NAME})
 
 pico_sdk_init()
 
@@ -15,8 +15,6 @@ execute_process(COMMAND
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 )
 message("Created makefsdata.c")
-
-set(PROGRAM_NAME pico_w_webserver)
 
 if (DEFINED ENV{WIFI_SSID} AND (NOT WIFI_SSID))
     set(WIFI_SSID $ENV{WIFI_SSID})
