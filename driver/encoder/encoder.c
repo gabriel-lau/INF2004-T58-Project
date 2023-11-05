@@ -38,6 +38,8 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 double leftCurrentSpeed = 0;
 double rightCurrentSpeed = 0;
 
+double distanceTravelled = 0;
+
 
 void moveForward()
 {
@@ -65,8 +67,9 @@ void gpio_left_encoder_changed_callback(uint gpio, uint32_t events) {
     {
         double currTime = time_us_32();
         double timeDiff = currTime - leftLastTime;
-        leftCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
-        printf("Wheel Speed: %f\n", leftCurrentSpeed);
+        distanceTravelled += DISTANCE_PER_PULSE * 2;
+        // leftCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
+        // printf("Wheel Speed: %f\n", leftCurrentSpeed);
         leftLastTime = currTime;
     }
 }
