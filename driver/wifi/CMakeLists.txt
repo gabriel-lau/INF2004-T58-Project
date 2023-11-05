@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROGRAM_NAME pico_w_project)
+set(PROGRAM_NAME wifi)
 set(PICO_BOARD pico_w)
 
-include(../pico_sdk_import.cmake)
-# include(../FreeRTOS_Kernel_import.cmake)
+include(../../pico_sdk_import.cmake)
 
 project(${PROGRAM_NAME})
 
@@ -31,15 +30,11 @@ set(WIFI_SSID "${WIFI_SSID}" CACHE INTERNAL "WiFi SSID for examples")
 set(WIFI_PASSWORD "${WIFI_PASSWORD}" CACHE INTERNAL "WiFi password for examples")
 
 add_executable(${PROGRAM_NAME}
-    main.c
-    http_server.c
-    tcp_server.c    
+    server.c
 )
-
 target_compile_definitions(${PROGRAM_NAME} PRIVATE
     WIFI_SSID=\"${WIFI_SSID}\"
     WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
-    # PING_USE_SOCKETS=1
 )
 
 target_include_directories(${PROGRAM_NAME} PRIVATE
@@ -48,13 +43,10 @@ target_include_directories(${PROGRAM_NAME} PRIVATE
 
 # pull in common dependencies
 target_link_libraries(${PROGRAM_NAME}
-    # pico_cyw43_arch_lwip_sys_freertos
     pico_cyw43_arch_lwip_threadsafe_background
     pico_lwip_http
     pico_stdlib                                     # for core functionality
     hardware_adc
-    # pico_lwip_iperf
-    # FreeRTOS-Kernel-Heap4
 )
 
 # enable usb output, disable uart output
