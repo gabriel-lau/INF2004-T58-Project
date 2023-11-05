@@ -2,13 +2,12 @@
 #define BARCODE_H
 
 // Configure the GPIO pin connected to the line tracking sensor
-#define BARCODE_SENSOR_PIN 26
-#define BARCODE_ADC_CHANNEL 0
+#define BARCODE_SENSOR_PIN 26  // Change this to your sensor's pin
+#define BARCODE_ADC_CHANNEL 0  // Change this to your sensor's adc channel
 #define BARCODE_BLACK_THRESHOLD 1200
 #define BARCODE_WHITE_THRESHOLD 1000
 #define BLACK_BAR_COUNT 5
 #define WHITE_BAR_COUNT 4
-#define MAX_PULSE_WIDTHS 9
 
 // Define the states of the FSM
 typedef enum {
@@ -66,5 +65,6 @@ BarcodeMapping barcodeMappings[] = {
     { "001001010", '.' },
     { "010101000", ' ' }
 };
+
 
 #endif

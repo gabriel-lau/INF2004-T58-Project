@@ -1,5 +1,5 @@
 #include <string.h>
-#include <stdio.h>  // Include the standard input/output header
+#include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/time.h"
 
@@ -19,14 +19,17 @@ static uint64_t lastBarTime = 0;
 BarcodeState currentState = STATE_WAITING_FOR_START;
 static int blackBarCount = 0;
 static int whiteBarCount = 0;
+static int done_black = 0;
+static int done_white = 0;
 
-static int pulseWidthCount = 0;
-static uint64_t pulseWidths[MAX_PULSE_WIDTHS];
+#define MAX_PULSE_WIDTHS 9                      // Adjust this to your desired array size
+static int pulseWidthCount = 0;                 // Counter for the number of stored pulseWidth values
+static uint64_t pulseWidths[MAX_PULSE_WIDTHS];  // Array to store pulseWidth values
 
 int get_ir_reading()
 {
-    uint16_t reading = adc_read();
-    return reading;
+  uint16_t reading = adc_read();
+  return reading;
 }
 
 // Function to find the Code 39 character for a given barcode pattern
@@ -45,20 +48,19 @@ void detect_barcode() {
   int currentTime = time_us_64();
   int pulseWidth = currentTime - lastBarTime;
 
-    switch (currentState) {
+  switch (currentState) {
     case STATE_WAITING_FOR_START:
-        if (!isBlackBar && reading > BARCODE_BLACK_THRESHOLD) {
+      if (!isBlackBar && reading > BARCODE_BLACK_THRESHOLD) {
         // Detected the start signal (black bar)
         currentState = STATE_DETECTING_WHITE;
         isBlackBar = true;
         lastBarTime = currentTime;
         blackBarCount = 1;
-        // printf("Detected Black Bar - Pulse Width: %d\n", pulseWidth);
-        }
+      }
     break;
 
     case STATE_DETECTING_BLACK:
-        if (!isBlackBar && reading > BARCODE_BLACK_THRESHOLD) {
+      if (!isBlackBar && reading > BARCODE_BLACK_THRESHOLD) {
         // Detected another black bar
         currentState = STATE_DETECTING_WHITE;
         isBlackBar = true;
@@ -67,66 +69,66 @@ void detect_barcode() {
         pulseWidths[pulseWidthCount++] = pulseWidth; // Store pulseWidth
         printf("Detected White Bar - Pulse Width: %d\n", pulseWidth);
         if (blackBarCount > BLACK_BAR_COUNT) {
-            printf("Barcode Overload!\n");
+          printf("Barcode Overload!\n");
         }
-        }
+      }
     break;
 
     case STATE_DETECTING_WHITE:
-        if (isBlackBar && reading < BARCODE_WHITE_THRESHOLD) {
-            // Detected a white bar
-            isBlackBar = false;
-            lastBarTime = currentTime;
-            whiteBarCount++;
-            pulseWidths[pulseWidthCount++] = pulseWidth; // Store pulseWidth
-            printf("Detected Black Bar - Pulse Width: %d\n", pulseWidth);
-            if (whiteBarCount > WHITE_BAR_COUNT) {
-                // Successfully detected the Code 39 pattern
-                printf("Code 39 Pattern Detected!\n");
-                // Calculate the average pulse width
-                uint64_t averagePulseWidth = 0;
-                for (int i = 0; i < pulseWidthCount; i++) {
-                    averagePulseWidth += pulseWidths[i];
-                }
-                averagePulseWidth /= pulseWidthCount;
+      if (isBlackBar && reading < BARCODE_WHITE_THRESHOLD) {
+        // Detected a white bar
+        isBlackBar = false;
+        lastBarTime = currentTime;
+        whiteBarCount++;
+        pulseWidths[pulseWidthCount++] = pulseWidth; // Store pulseWidth
+        printf("Detected Black Bar - Pulse Width: %d\n", pulseWidth);
+        if (whiteBarCount > WHITE_BAR_COUNT) {
+          // Successfully detected the Code 39 pattern
+          printf("Code 39 Pattern Detected!\n");
+          // Calculate the average pulse width
+          uint64_t averagePulseWidth = 0;
+          for (int i = 0; i < pulseWidthCount; i++) {
+              averagePulseWidth += pulseWidths[i];
+          }
+          averagePulseWidth /= pulseWidthCount;
 
-                // Set a threshold to differentiate narrow and wide bars
-                uint64_t threshold = averagePulseWidth;
+          // Set a threshold to differentiate narrow and wide bars
+          uint64_t threshold = averagePulseWidth;
 
-                // Initialize an array to store narrow (0) or wide (1) bar classifications
-                int barcodeClassification[pulseWidthCount];
+          // Initialize an array to store narrow (0) or wide (1) bar classifications
+          int barcodeClassification[pulseWidthCount];
 
-                for (int i = 0; i < pulseWidthCount; i++) {
-                    if (pulseWidths[i] > threshold) {
-                        barcodeClassification[i] = 1;  // Wide bar
-                    } else {
-                        barcodeClassification[i] = 0;  // Narrow bar
-                    }
-                }
+          for (int i = 0; i < pulseWidthCount; i++) {
+              if (pulseWidths[i] > threshold) {
+                  barcodeClassification[i] = 1;  // Wide bar
+              } else {
+                  barcodeClassification[i] = 0;  // Narrow bar
+              }
+          }
 
-                char barcodePattern[MAX_PULSE_WIDTHS] = ""; // Initialize an empty string
-                char str[1];
+          char barcodePattern[MAX_PULSE_WIDTHS] = ""; // Initialize an empty string
+          char str[1];
 
-                for (int i = 0; i < pulseWidthCount; i++) {
-                sprintf(str, "%d", barcodeClassification[i]);
-                strcat(barcodePattern, str);
-                }
+          for (int i = 0; i < pulseWidthCount; i++) {
+            sprintf(str, "%d", barcodeClassification[i]);
+            strcat(barcodePattern, str);
+          }
 
-                char code39Character = findCode39Character(barcodePattern);
-                printf("Barcode Pattern: %s => Code 39 Character: %c\n", barcodePattern, code39Character);
+          char code39Character = findCode39Character(barcodePattern);
+          printf("Barcode Pattern: %s => Code 39 Character: %c\n", barcodePattern, code39Character);
 
 
-                // Reset the FSM to wait for the next barcode
-                blackBarCount = 0;
-                whiteBarCount = 0;
-                pulseWidthCount = 0;
-                currentState = STATE_WAITING_FOR_START;
-            } else {
-                currentState = STATE_DETECTING_BLACK;
-            }
+          // Reset the FSM to wait for the next barcode
+          blackBarCount = 0;
+          whiteBarCount = 0;
+          pulseWidthCount = 0;
+          currentState = STATE_WAITING_FOR_START;
+        } else {
+          currentState = STATE_DETECTING_BLACK;
         }
-        break;
-    }
+      }
+      break;
+  }
 }
 
 
@@ -139,22 +141,22 @@ void read_barcode(__unused void *params) {
     adc_select_input(BARCODE_ADC_CHANNEL);  
 
     while(true) {
-        detect_barcode();
+      detect_barcode();
     }
 }
 void vLaunch(void) {
-    TaskHandle_t barcode_task;
-    xTaskCreate(read_barcode, "BarcodeThread", configMINIMAL_STACK_SIZE, NULL, 1, &barcode_task);
+  TaskHandle_t barcode_task;
+  xTaskCreate(read_barcode, "BarcodeThread", configMINIMAL_STACK_SIZE, NULL, 1, &barcode_task);
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
-    // we must bind the main task to one core (well at least while the init is called)
-    // (note we only do this in NO_SYS mode, because cyw43_arch_freertos
-    // takes care of it otherwise)
-    vTaskCoreAffinitySet(task, 1);
+  // we must bind the main task to one core (well at least while the init is called)
+  // (note we only do this in NO_SYS mode, because cyw43_arch_freertos
+  // takes care of it otherwise)
+  vTaskCoreAffinitySet(task, 1);
 #endif
 
-    /* Start the tasks and timer running. */
-    vTaskStartScheduler();
+  /* Start the tasks and timer running. */
+  vTaskStartScheduler();
 }
 
 int main(void) {
