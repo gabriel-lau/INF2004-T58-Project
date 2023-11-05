@@ -12,7 +12,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ping.h"
-#include "ultrasonic.h"
 
 #ifndef PING_ADDR
 #define PING_ADDR "142.251.35.196"
