@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROGRAM_NAME pico_w_barcode)
+set(PROGRAM_NAME barcode)
 set(PICO_BOARD pico_w)
 
 include(../../../pico_sdk_import.cmake)
