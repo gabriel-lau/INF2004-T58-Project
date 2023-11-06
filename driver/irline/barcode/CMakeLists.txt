@@ -1,15 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
-
 set(PROGRAM_NAME barcode)
-set(PICO_BOARD pico_w)
-
-include(../../../pico_sdk_import.cmake)
-include(../../../FreeRTOS_Kernel_import.cmake)
-
-# Set the project name and programming language
-project(${PROGRAM_NAME})
-
-pico_sdk_init()
 
 # Add your source files
 add_executable(${PROGRAM_NAME}

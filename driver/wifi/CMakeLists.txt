@@ -1,14 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
-
 set(PROGRAM_NAME wifi)
-set(PICO_BOARD pico_w)
-
-include(../../pico_sdk_import.cmake)
-include(../../FreeRTOS_Kernel_import.cmake)
-
-project(${PROGRAM_NAME})
-
-pico_sdk_init()
 
 message("Running makefsdata.py script")
 execute_process(COMMAND
