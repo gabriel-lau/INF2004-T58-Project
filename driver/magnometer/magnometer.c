@@ -1,9 +1,22 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include <math.h> // Include the math library for atan2 and M_PI
 
 #define LSM303DLHC_ADDRESS 0x19 // 7-bit I2C address of the LSM303DLHC accelerometer/magnetometer
 #define MAG_ADDRESS 0x1E
+int16_t x_avg = 0, y_avg = 0, z_avg = 0;
+int readings = 0;
+
+float get_heading(int16_t x_mag, int16_t y_mag)
+{
+    float heading = atan2((float)y_mag, (float)x_mag);
+    heading = heading * (180.0 / M_PI);
+    heading += 0.05;
+    if (heading < 0)
+        heading += 360.0;
+    return heading;
+}
 
 void lsm303dlhc_init(i2c_inst_t *i2c)
 {
@@ -46,13 +59,14 @@ void lsm303dlhc_read_magnetometer(i2c_inst_t *i2c, int16_t *x, int16_t *y, int16
     i2c_read_blocking(i2c, MAG_ADDRESS, data, 6, false);
 
     // Extract magnetometer values
-    *x = (int16_t)((data[1] << 8) | data[0]);
-    *z = (int16_t)((data[3] << 8) | data[2]);
-    *y = (int16_t)((data[5] << 8) | data[4]);
+    *x = (int16_t)((data[0] << 8) | data[1]);
+    *z = (int16_t)((data[2] << 8) | data[3]);
+    *y = (int16_t)((data[4] << 8) | data[5]);
 }
 
 int main()
 {
+
     stdio_init_all();
     i2c_inst_t *i2c = i2c0;
 
@@ -62,13 +76,16 @@ int main()
     {
         int16_t x_acc, y_acc, z_acc;
         lsm303dlhc_read_acceleration(i2c, &x_acc, &y_acc, &z_acc);
-        printf("Acceleration - X: %d, Y: %d, Z: %d\n", x_acc, y_acc, z_acc);
+        //printf("Acceleration - X: %d, Y: %d, Z: %d\n", x_acc, y_acc, z_acc);
 
         int16_t x_mag, y_mag, z_mag;
         lsm303dlhc_read_magnetometer(i2c, &x_mag, &y_mag, &z_mag);
-        printf("Magnetometer - X: %d, Y: %d, Z: %d\n", x_mag, y_mag, z_mag);
+        //printf("Magnetometer - X: %d, Y: %d, Z: %d\n", x_mag, y_mag, z_mag);
 
-        sleep_ms(1000);
+        float heading = get_heading(x_mag, y_mag);
+        printf("Heading: %.2f degrees\n", heading);
+
+        sleep_ms(100);
     }
 
     return 0;
