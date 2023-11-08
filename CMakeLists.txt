@@ -50,7 +50,7 @@ target_compile_definitions(main PRIVATE
 
 target_include_directories(main PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
-        ${CMAKE_CURRENT_LIST_DIR}/../.. # for our common lwipopts
+        #${CMAKE_CURRENT_LIST_DIR}/../.. # for our common lwipopts
         #${PICO_LWIP_CONTRIB_PATH}/apps/ping
         )
 

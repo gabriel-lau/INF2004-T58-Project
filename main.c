@@ -53,24 +53,9 @@ const int ECHO_PIN = 3;
 
 // GPIO pins for IR
 
-
-void vLaunch( void) {
-    moveForward();
-
-#if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
-    // we must bind the main task to one core (well at least while the init is called)
-    // (note we only do this in NO_SYS mode, because cyw43_arch_freertos
-    // takes care of it otherwise)
-    vTaskCoreAffinitySet(task, 1);
-#endif
-
-    /* Start the tasks and timer running. */
-    vTaskStartScheduler();
-}
-
-void motorSetup()
+void motorTask(void *pvParameters)
 {
-        //Init Left GPIO
+    //Init Left GPIO
     gpio_init(INPUT_1_LEFT);
     gpio_init(INPUT_2_LEFT);
     gpio_init(PWM_LEFT);
@@ -99,6 +84,43 @@ void motorSetup()
 
     pwm_set_enabled(slice_num_left, true);
     pwm_set_enabled(slice_num_right, true);
+    while (1)
+    {
+        moveForward();
+        vTaskDelay(1000);
+        stop();
+        vTaskDelay(1000);
+        moveBackward();
+        vTaskDelay(1000);
+        stop();
+        vTaskDelay(1000);
+        turnLeft();
+        vTaskDelay(1000);
+        stop();
+        vTaskDelay(1000);
+    }
+}
+
+void vLaunch( void) {
+
+    TaskHandle_t motorTaskHandle;
+    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+
+
+#if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
+    // we must bind the main task to one core (well at least while the init is called)
+    // (note we only do this in NO_SYS mode, because cyw43_arch_freertos
+    // takes care of it otherwise)
+    vTaskCoreAffinitySet(task, 1);
+#endif
+
+    /* Start the tasks and timer running. */
+    vTaskStartScheduler();
+}
+
+void motorSetup()
+{
+    
 }
 
 int main( void )
