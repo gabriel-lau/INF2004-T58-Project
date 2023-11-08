@@ -42,7 +42,7 @@ void lsm303dlhc_init(i2c_inst_t *i2c)
 void lsm303dlhc_read_acceleration(i2c_inst_t *i2c, int16_t *x, int16_t *y, int16_t *z)
 {
     uint8_t data[6];
-    data[0] = 0x28 | 0x80; // OUT_X_L_A address with MSB set for auto-increment
+    data[0] = 0xA8 | 0x80; // OUT_X_L_A address with MSB set for auto-increment
     i2c_write_blocking(i2c, LSM303DLHC_ADDRESS, data, 1, true);
     i2c_read_blocking(i2c, LSM303DLHC_ADDRESS, data, 6, false);
 
@@ -76,11 +76,11 @@ int main()
     {
         int16_t x_acc, y_acc, z_acc;
         lsm303dlhc_read_acceleration(i2c, &x_acc, &y_acc, &z_acc);
-        //printf("Acceleration - X: %d, Y: %d, Z: %d\n", x_acc, y_acc, z_acc);
+        // printf("Acceleration - X: %d, Y: %d, Z: %d\n", x_acc, y_acc, z_acc);
 
         int16_t x_mag, y_mag, z_mag;
         lsm303dlhc_read_magnetometer(i2c, &x_mag, &y_mag, &z_mag);
-        //printf("Magnetometer - X: %d, Y: %d, Z: %d\n", x_mag, y_mag, z_mag);
+        // printf("Magnetometer - X: %d, Y: %d, Z: %d\n", x_mag, y_mag, z_mag);
 
         float heading = get_heading(x_mag, y_mag);
         printf("Heading: %.2f degrees\n", heading);
