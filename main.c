@@ -19,7 +19,7 @@
 #include "hardware/timer.h"
 #include "hardware/pwm.h"
 
-#include "driver/motor/motor.h"
+#include "driver/motor/motor.c"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 

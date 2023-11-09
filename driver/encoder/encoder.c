@@ -35,14 +35,23 @@ const double PULSES_PER_REVOLUTION = 40;
 const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 
 // Encoder
-double leftCurrentSpeed = 0;
-double rightCurrentSpeed = 0;
+double leftDistanceTravelled = 0;
+double rightDistanceTravelled = 0;
+double targetDisance;
 
-double distanceTravelled = 0;
+// PID constants
+// PID gains 
+double kp = 2.0;
+double ki = 0.1; 
+double kd = 1.0;
 
+double prevError = 0;
+double integral = 0; 
 
 void moveForward()
 {
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 1);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 1);
@@ -51,45 +60,107 @@ void moveForward()
 
 void stop()
 {
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
     gpio_put(INPUT_2_RIGHT, 0);
 }
 
-void gpio_left_encoder_changed_callback(uint gpio, uint32_t events) {
-    static double leftLastTime;
-    if (events & GPIO_IRQ_EDGE_RISE)
+void controlLoop() {
+
+    double *slowMotor;
+    double *fastMotor;
+
+    // Read current position
+    if (leftDistanceTravelled == rightDistanceTravelled)
     {
-        leftLastTime = time_us_32();
+        return;
+    }
+    else if (leftDistanceTravelled > rightDistanceTravelled)
+    {
+        // Adjust right motor
+        slowMotor = &rightDistanceTravelled;
+        fastMotor = &leftDistanceTravelled;
     }
     else
     {
-        double currTime = time_us_32();
-        double timeDiff = currTime - leftLastTime;
-        distanceTravelled += DISTANCE_PER_PULSE * 2;
-        // leftCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
-        // printf("Wheel Speed: %f\n", leftCurrentSpeed);
-        leftLastTime = currTime;
+        // Adjust left motor
+        slowMotor = &leftDistanceTravelled;
+        fastMotor = &rightDistanceTravelled;
+    }
+
+    //double currentPosition = readPosition(); // meters
+
+    // Calculate error
+    double error = *slowMotor - *fastMotor;
+
+    // Integral term
+    integral += error * DISTANCE_PER_PULSE * 2;
+
+    // Derivative term
+    double derivative = (error - prevError) / DISTANCE_PER_PULSE * 2;
+
+    // Calculate output
+    double output = kp * error + ki * integral + kd * derivative;
+
+    // Update motor
+    //updateMotor(output); // * 180
+    if (slowMotor == &leftDistanceTravelled)
+    {
+        PWM_LEFT_CYCLE = PWM_LEFT_CYCLE + output * 180;
+    }
+    else
+    {
+        PWM_RIGHT_CYCLE = PWM_RIGHT_CYCLE + output * 180;
+    }
+
+    // Update previous error
+    prevError = error;
+}
+
+
+void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
+    static double leftLastTime;
+    static double rightLastTime;
+    if (events & GPIO_IRQ_EDGE_RISE )
+    {
+        if (gpio == ENCODER_LEFT)
+        {
+            leftLastTime = time_us_32();
+        }
+        else if (gpio == ENCODER_RIGHT)
+        {
+            rightLastTime = time_us_32();
+        }
+    }
+    else
+    {
+        if (gpio == ENCODER_LEFT)
+        {
+            double currTime = time_us_32();
+            //double timeDiff = currTime - leftLastTime;
+            leftDistanceTravelled += DISTANCE_PER_PULSE * 2;
+            printf("L Distance Travelled: %f\n", leftDistanceTravelled);
+            // leftCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
+            // printf("Wheel Speed: %f\n", leftCurrentSpeed);
+            leftLastTime = currTime;
+        }
+        else if (gpio == ENCODER_RIGHT)
+        {
+            double currTime = time_us_32();
+            //double timeDiff = currTime - rightLastTime;
+            //printf("Time Diff: %f\n", timeDiff);
+            rightDistanceTravelled += DISTANCE_PER_PULSE * 2;
+            printf("R Distance Travelled: %f\n", rightDistanceTravelled);
+            //rightCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
+            // printf("Wheel Speed: %f\n", rightCurrentSpeed);
+            rightLastTime = currTime;
+        }
     }
 }
-/*
-void gpio_right_encoder_changed_callback(uint gpio, uint32_t events) {
-    static double rightLastTime;
-    if (events & GPIO_IRQ_EDGE_RISE)
-    {
-        rightLastTime = time_us_32();
-    }
-    else
-    {
-        double currTime = time_us_32();
-        double timeDiff = currTime - rightLastTime;
-        printf("Time Diff: %f\n", timeDiff);
-        rightCurrentSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000.0);
-        // printf("Wheel Speed: %f\n", rightCurrentSpeed);
-        rightLastTime = currTime;
-    }
-}*/
+
 
 int main()
 {
@@ -129,13 +200,14 @@ int main()
     pwm_set_enabled(slice_num_left, true);
     pwm_set_enabled(slice_num_right, true);
 
-    gpio_set_irq_enabled_with_callback(ENCODER_LEFT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_left_encoder_changed_callback);
-    // gpio_set_irq_enabled_with_callback(ENCODER_RIGHT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_right_encoder_changed_callback);
+    gpio_set_irq_enabled_with_callback(ENCODER_LEFT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
+    gpio_set_irq_enabled_with_callback(ENCODER_RIGHT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
     while(1){
         moveForward();
-        sleep_ms(5 * 1000);
-        stop();
-        sleep_ms(5 * 1000);
+        controlLoop();
+        //sleep_ms(5 * 1000);
+        //stop();
+        //sleep_ms(5 * 1000);
     };
 
     return 0;
