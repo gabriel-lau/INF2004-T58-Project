@@ -7,13 +7,6 @@
 // This example uses a common include to avoid repetition
 #include "lwipopts_examples_common.h"
 
-// This section enables HTTPD server with SSI, SGI
-// and tells server which converted HTML files to use
-#define LWIP_HTTPD 1
-#define LWIP_HTTPD_SSI 1
-#define LWIP_HTTPD_CGI 1
-#define LWIP_HTTPD_SSI_INCLUDE_TAG 0
-
 #if !NO_SYS
 #define TCPIP_THREAD_STACKSIZE 1024
 #define DEFAULT_THREAD_STACKSIZE 1024

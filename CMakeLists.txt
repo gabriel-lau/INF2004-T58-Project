@@ -40,9 +40,6 @@ include(FreeRTOS_Kernel_import.cmake)
 #######################################################################################################################################
         add_executable(main
                 main.c
-                driver/wifi/wifi.c
-                driver/wifi/http_server.c
-                driver/wifi/tcp_server.c    
                 #${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
                 )
 target_compile_definitions(main PRIVATE
