@@ -19,7 +19,8 @@
 #include "hardware/timer.h"
 #include "hardware/pwm.h"
 
-#include "driver/motor/motor.c"
+#include "driver/motor/motor.h"
+#include "driver/ultrasonic/ultrasonic.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 
@@ -53,6 +54,23 @@ const int ECHO_PIN = 3;
 
 // GPIO pins for IR
 
+// get direction by distance
+void setDir(int distance) // change direction if meet obstacle
+{
+    if (distance <= 5)
+    {
+        stop();
+        printf("%d",distance);
+        printf("Stop\n");
+    }
+    else 
+    {
+        moveForward();
+        printf("Forward\n");
+        printf("Bye\n");
+    }
+}
+
 void motorTask(void *pvParameters)
 {
     //Init Left GPIO
@@ -84,19 +102,14 @@ void motorTask(void *pvParameters)
 
     pwm_set_enabled(slice_num_left, true);
     pwm_set_enabled(slice_num_right, true);
+
+
     while (1)
     {
-        moveForward();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        moveBackward();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        turnLeft();
-        vTaskDelay(1000);
-        stop();
+        setupUltrasonicPins(TRIGGER_PIN, ECHO_PIN);
+        getCm(TRIGGER_PIN, ECHO_PIN);
+        printf("here");
+        setDir(getDistance());
         vTaskDelay(1000);
     }
 }
@@ -126,6 +139,7 @@ void motorSetup()
 int main( void )
 {
     stdio_init_all();
+
     void motorSetup();
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
