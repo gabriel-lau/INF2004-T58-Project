@@ -42,8 +42,8 @@ uint16_t PWM_LEFT_CYCLE = 32768;
 uint16_t PWM_RIGHT_CYCLE = 32768;
 
 // GPIO pins for ENCODER
-const int ENCODER_LEFT = 15;
-const int ENCODER_RIGHT = 16;
+int ENCODER_LEFT = 15;
+int ENCODER_RIGHT = 16;
 
 // GPIO pins for MAGNOMETER
 const int MAG_SDA = 0;
@@ -99,17 +99,6 @@ void motorTask(void *pvParameters)
     gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
     gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
     gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
-
-    // Find out which PWM slice is connected to GPIO
-    uint slice_num_left = pwm_gpio_to_slice_num(PWM_LEFT);
-    uint slice_num_right = pwm_gpio_to_slice_num(PWM_RIGHT);
-
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-
-    pwm_set_enabled(slice_num_left, true);
-    pwm_set_enabled(slice_num_right, true);
-
 
     while (1)
     {   
