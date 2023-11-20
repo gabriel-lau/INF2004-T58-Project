@@ -24,5 +24,5 @@ int irLine(int lineTrackingPin)
     // Add a delay to control the update rate
     sleep_ms(100); // Adjust the delay as needed
 
-    return 0;
+    return gpio_get(lineTrackingPin);
 }

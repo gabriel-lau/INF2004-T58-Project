@@ -59,8 +59,8 @@ const int TRIGGER_PIN = 2;
 const int ECHO_PIN = 3;
 
 // GPIO pins for IR
-const uint IR_PIN_RIGHT = 10;
-const uint IR_PIN_LEFT = 11;
+const uint IR_PIN_RIGHT = 4;
+const uint IR_PIN_LEFT = 5;
 
 // get direction by distance
 void setDir(int distance) // change direction if meet obstacle
