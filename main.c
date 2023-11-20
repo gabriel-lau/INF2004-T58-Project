@@ -21,6 +21,11 @@
 
 #include "driver/motor/motor.c"
 
+#include "driver/irline/barcode/barcode.h"
+#include "driver/irline/barcode/barcode.c"
+
+
+
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 
 #ifndef RUN_FREERTOS_ON_CORE
@@ -101,10 +106,22 @@ void motorTask(void *pvParameters)
     }
 }
 
+
+
+
+
+
+
 void vLaunch( void) {
 
     TaskHandle_t motorTaskHandle;
     xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+
+   
+    
+    
+
+   
 
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
@@ -118,15 +135,16 @@ void vLaunch( void) {
     vTaskStartScheduler();
 }
 
-void motorSetup()
-{
+// void motorSetup()
+// {
     
-}
+// }
 
 int main( void )
 {
     stdio_init_all();
-    void motorSetup();
+     void motorSetup();
+     barcode_init(); // to initialize the barcode
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
 #if ( portSUPPORT_SMP == 1 )

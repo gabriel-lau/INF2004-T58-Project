@@ -40,6 +40,7 @@ include(FreeRTOS_Kernel_import.cmake)
 #######################################################################################################################################
 add_executable(main
         main.c
+       
         #${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
         )
 target_compile_definitions(main PRIVATE
