@@ -59,7 +59,7 @@ void setDir(int distance) // change direction if meet obstacle
 {
     if (distance <= 5)
     {
-        stop();
+        moveBackward();
         printf("%d",distance);
         printf("Stop\n");
     }
