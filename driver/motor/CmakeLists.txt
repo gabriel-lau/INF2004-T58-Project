@@ -1,5 +1,5 @@
 add_executable(motor
-        motor_duplicate.c
+        motor.c
         )
 
 # pull in common dependencies and additional pwm hardware support
