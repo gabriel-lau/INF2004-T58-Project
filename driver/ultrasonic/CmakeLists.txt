@@ -1,14 +1,14 @@
-add_executable(ultrasonic
-    ultrasonic.c
-        )
+# add_executable(ultrasonic
+#     ultrasonic.c
+#         )
 
-# pull in common dependencies and additional pwm hardware support
-target_link_libraries(ultrasonic pico_stdlib hardware_pwm)
+# # pull in common dependencies and additional pwm hardware support
+# target_link_libraries(ultrasonic pico_stdlib hardware_pwm)
 
-# create map/bin/hex file etc.
-pico_add_extra_outputs(ultrasonic)
+# # create map/bin/hex file etc.
+# pico_add_extra_outputs(ultrasonic)
 
-pico_enable_stdio_usb(ultrasonic 1)
+# pico_enable_stdio_usb(ultrasonic 1)
 
-# add url via pico_set_program_url
-example_auto_set_url(ultrasonic)
+# # add url via pico_set_program_url
+# example_auto_set_url(ultrasonic)

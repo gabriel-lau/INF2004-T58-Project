@@ -19,7 +19,9 @@
 #include "hardware/timer.h"
 #include "hardware/pwm.h"
 
-#include "driver/motor/motor.c"
+#include "driver/motor/motor.h"
+#include "driver/ultrasonic/ultrasonic.h"
+#include "driver/irline/irline.h"
 
 #include "driver/irline/barcode/barcode.h"
 #include "driver/irline/barcode/barcode.c"
@@ -45,8 +47,8 @@ uint16_t PWM_LEFT_CYCLE = 32768;
 uint16_t PWM_RIGHT_CYCLE = 32768;
 
 // GPIO pins for ENCODER
-const int ENCODER_LEFT = 15;
-const int ENCODER_RIGHT = 16;
+int ENCODER_LEFT = 15;
+int ENCODER_RIGHT = 16;
 
 // GPIO pins for MAGNOMETER
 const int MAG_SDA = 0;
@@ -57,9 +59,32 @@ const int TRIGGER_PIN = 2;
 const int ECHO_PIN = 3;
 
 // GPIO pins for IR
+const uint IR_PIN_RIGHT = 10;
+const uint IR_PIN_LEFT = 11;
+
+// get direction by distance
+void setDir(int distance) // change direction if meet obstacle
+{
+    if (distance <= 5)
+    {
+        moveBackward();
+        printf("%d",distance);
+        printf("Stop\n");
+    }
+    else 
+    {
+        moveForward();
+        printf("Forward\n");
+    }
+}
 
 void motorTask(void *pvParameters)
 {
+    gpio_init(IR_PIN_LEFT);
+    gpio_set_dir(IR_PIN_LEFT, GPIO_IN);
+    gpio_init(IR_PIN_RIGHT);
+    gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
+
     //Init Left GPIO
     gpio_init(INPUT_1_LEFT);
     gpio_init(INPUT_2_LEFT);
@@ -80,29 +105,17 @@ void motorTask(void *pvParameters)
     gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
     gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
 
-    // Find out which PWM slice is connected to GPIO
-    uint slice_num_left = pwm_gpio_to_slice_num(PWM_LEFT);
-    uint slice_num_right = pwm_gpio_to_slice_num(PWM_RIGHT);
-
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-
-    pwm_set_enabled(slice_num_left, true);
-    pwm_set_enabled(slice_num_right, true);
     while (1)
-    {
-        moveForward();
+    {   
+        printf("LEFT IS HERE\n");
+        irLine(IR_PIN_LEFT);
+        printf("RIGHT IS HERE\n");
+        irLine(IR_PIN_RIGHT);
+        setupUltrasonicPins(TRIGGER_PIN, ECHO_PIN);
+        getCm(TRIGGER_PIN, ECHO_PIN);
+        setDir(getDistance());
         vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        moveBackward();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        turnLeft();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
+        printf("\n");
     }
 }
 
