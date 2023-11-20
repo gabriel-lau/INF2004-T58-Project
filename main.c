@@ -21,6 +21,7 @@
 
 #include "driver/motor/motor.h"
 #include "driver/ultrasonic/ultrasonic.h"
+#include "driver/irline/irline.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 
@@ -53,6 +54,8 @@ const int TRIGGER_PIN = 2;
 const int ECHO_PIN = 3;
 
 // GPIO pins for IR
+const uint IR_PIN_RIGHT = 10;
+const uint IR_PIN_LEFT = 11;
 
 // get direction by distance
 void setDir(int distance) // change direction if meet obstacle
@@ -67,12 +70,16 @@ void setDir(int distance) // change direction if meet obstacle
     {
         moveForward();
         printf("Forward\n");
-        printf("Bye\n");
     }
 }
 
 void motorTask(void *pvParameters)
 {
+    gpio_init(IR_PIN_LEFT);
+    gpio_set_dir(IR_PIN_LEFT, GPIO_IN);
+    gpio_init(IR_PIN_RIGHT);
+    gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
+
     //Init Left GPIO
     gpio_init(INPUT_1_LEFT);
     gpio_init(INPUT_2_LEFT);
@@ -105,12 +112,16 @@ void motorTask(void *pvParameters)
 
 
     while (1)
-    {
+    {   
+        printf("LEFT IS HERE\n");
+        irLine(IR_PIN_LEFT);
+        printf("RIGHT IS HERE\n");
+        irLine(IR_PIN_RIGHT);
         setupUltrasonicPins(TRIGGER_PIN, ECHO_PIN);
         getCm(TRIGGER_PIN, ECHO_PIN);
-        printf("here");
         setDir(getDistance());
         vTaskDelay(1000);
+        printf("\n");
     }
 }
 
