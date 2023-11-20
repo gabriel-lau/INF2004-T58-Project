@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <math.h>
+#include "pico/stdlib.h"
+
+#include "hardware/gpio.h"
+#include "hardware/timer.h"
+#include "hardware/pwm.h"
+
 // GPIO pins for MOTOR
 extern int INPUT_1_LEFT;
 extern int INPUT_2_LEFT;
