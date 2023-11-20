@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
-#include "pico/cyw43_arch.h"
+#include <math.h>
 #include "pico/stdlib.h"
+#include "pico/cyw43_arch.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -20,6 +21,7 @@
 #include "hardware/pwm.h"
 
 #include "driver/motor/motor.c"
+#include "driver/wifi/wifi.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 
@@ -106,27 +108,28 @@ void vLaunch( void) {
     TaskHandle_t motorTaskHandle;
     xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
 
-
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
     // we must bind the main task to one core (well at least while the init is called)
     // (note we only do this in NO_SYS mode, because cyw43_arch_freertos
     // takes care of it otherwise)
     vTaskCoreAffinitySet(task, 1);
 #endif
-
     /* Start the tasks and timer running. */
     vTaskStartScheduler();
 }
 
-void motorSetup()
-{
-    
-}
+// void motorSetup()
+// {
+// }
 
 int main( void )
 {
     stdio_init_all();
-    void motorSetup();
+    // void motorSetup();
+
+    printf("Setup wifi component");
+    wifiSetup();
+
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
 #if ( portSUPPORT_SMP == 1 )

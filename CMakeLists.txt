@@ -38,10 +38,13 @@ include(FreeRTOS_Kernel_import.cmake)
 #######################################################################################################################################
 ########################################################## CMAKE MAIN.c file ##########################################################
 #######################################################################################################################################
-add_executable(main
-        main.c
-        #${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
-        )
+        add_executable(main
+                main.c
+                driver/wifi/wifi.c
+                driver/wifi/http_server.c
+                driver/wifi/tcp_server.c    
+                #${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
+                )
 target_compile_definitions(main PRIVATE
         WIFI_SSID=\"${WIFI_SSID}\"
         WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
@@ -56,11 +59,18 @@ target_include_directories(main PRIVATE
 
 target_link_libraries(main
         pico_cyw43_arch_lwip_sys_freertos
+        # pico_cyw43_arch_lwip_threadsafe_background
         pico_stdlib
         pico_lwip_iperf
+        pico_lwip_http
         hardware_adc
-		hardware_pwm
+        hardware_pwm
         FreeRTOS-Kernel-Heap4 # FreeRTOS kernel and dynamic heap
         )
+
 pico_enable_stdio_usb(main 1)
+pico_enable_stdio_uart(main 0)
+
 pico_add_extra_outputs(main)
+
+example_auto_set_url(main)
