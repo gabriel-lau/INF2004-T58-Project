@@ -80,28 +80,11 @@ void motorTask(void *pvParameters)
     gpio_init(IR_PIN_RIGHT);
     gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
 
-    //Init Left GPIO
-    gpio_init(INPUT_1_LEFT);
-    gpio_init(INPUT_2_LEFT);
-    gpio_init(PWM_LEFT);
-
-    //Init Right GPIO
-    gpio_init(INPUT_1_RIGHT);
-    gpio_init(INPUT_2_RIGHT);
-    gpio_init(PWM_RIGHT);
-
-    //Set Left GPIO to out power board
-    gpio_set_dir(INPUT_1_LEFT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_LEFT, GPIO_OUT);
-    gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
-
-    //Set Right GPIO to out power board
-    gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
-    gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
-
+    motorSetup();
     while (1)
     {   
+        moveForward();
+        /*
         printf("LEFT IS HERE\n");
         irLine(IR_PIN_LEFT);
         printf("RIGHT IS HERE\n");
@@ -110,7 +93,7 @@ void motorTask(void *pvParameters)
         getCm(TRIGGER_PIN, ECHO_PIN);
         setDir(getDistance());
         vTaskDelay(1000);
-        printf("\n");
+        printf("\n");*/
     }
 }
 
@@ -131,16 +114,9 @@ void vLaunch( void) {
     vTaskStartScheduler();
 }
 
-void motorSetup()
-{
-    
-}
-
 int main( void )
 {
     stdio_init_all();
-
-    void motorSetup();
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
 #if ( portSUPPORT_SMP == 1 )

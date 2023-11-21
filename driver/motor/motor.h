@@ -37,11 +37,11 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 15% DUTY CYCLE = 9375
 10% DUTY CYCLE = 6250
 */
-float desiredSpeed = 30;
+float desiredSpeed = 15;
 double leftSpeed = 0;
 double rightSpeed = 0;
-double leftDutyCycle = 31250; 
-double rightDutyCycle = 31250;
+double leftDutyCycle = 12500; 
+double rightDutyCycle = 12500;
 
 // PID constants
 // PID gains 
@@ -49,8 +49,33 @@ float Kp = 2.0;
 float Ki = 0.2; 
 float Kd = 0.02; 
 
-float prevError = 0;
-float integral = 0; 
+float leftPrevError = 0;
+float leftIntegral = 0;
+float rightPrevError = 0;
+float rightIntegral = 0;
+
+void motorSetup() 
+{
+    //Init Left GPIO
+    gpio_init(INPUT_1_LEFT);
+    gpio_init(INPUT_2_LEFT);
+    gpio_init(PWM_LEFT);
+
+    //Init Right GPIO
+    gpio_init(INPUT_1_RIGHT);
+    gpio_init(INPUT_2_RIGHT);
+    gpio_init(PWM_RIGHT);
+
+    //Set Left GPIO to out power board
+    gpio_set_dir(INPUT_1_LEFT, GPIO_OUT);
+    gpio_set_dir(INPUT_2_LEFT, GPIO_OUT);
+    gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
+
+    //Set Right GPIO to out power board
+    gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
+    gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
+    gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
+}
 
 // Function to compute the control signal
 float controlLoop(float setpoint, float current_value, float *integral, float *prev_error) {
@@ -83,8 +108,8 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - leftLastTime;
             double leftSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            printf("Left speed: %f\n", leftSpeed);
-            controlLoop(30, leftSpeed, &integral, &prevError);
+            printf("L speed: %f\n", leftSpeed);
+            leftDutyCycle += controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError);
             leftLastTime = currTime;
         }
         else if (gpio == ENCODER_RIGHT)
@@ -92,8 +117,8 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - rightLastTime;
             double rightSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            printf("Right speed: %f\n", rightSpeed);
-            controlLoop(30, rightSpeed, &integral, &prevError);
+            printf("R speed: %f\n", rightSpeed);
+            rightDutyCycle += controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError);
             rightLastTime = currTime;
         }
     }
