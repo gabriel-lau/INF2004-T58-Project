@@ -1,11 +1,12 @@
 const express = require("express");
 const http = require("http");
 const net = require("net");
-const socket = require("socket.io");
 const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
+
+// Run wuth node index.js 
 
 // Enable CORS for all routes
 app.use(
