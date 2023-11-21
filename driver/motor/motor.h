@@ -40,8 +40,8 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 float desiredSpeed = 15;
 double leftSpeed = 0;
 double rightSpeed = 0;
-double leftDutyCycle = 12500; 
-double rightDutyCycle = 12500;
+double leftDutyCycle = 15625; 
+double rightDutyCycle = 15625;
 
 // PID constants
 // PID gains 
@@ -109,7 +109,9 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double timeDiff = currTime - leftLastTime;
             double leftSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
             printf("L speed: %f\n", leftSpeed);
-            leftDutyCycle += controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError);
+            // float diff = controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError) * 10;
+            // printf("L diff: %f\n", diff);
+            // leftDutyCycle += diff;
             leftLastTime = currTime;
         }
         else if (gpio == ENCODER_RIGHT)
@@ -118,7 +120,9 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double timeDiff = currTime - rightLastTime;
             double rightSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
             printf("R speed: %f\n", rightSpeed);
-            rightDutyCycle += controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError);
+            // float diff = controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError) * 10;
+            // printf("R diff: %f\n", diff);
+            // rightDutyCycle += diff;
             rightLastTime = currTime;
         }
     }
