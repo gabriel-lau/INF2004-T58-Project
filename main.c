@@ -22,6 +22,7 @@
 #include "hardware/timer.h"
 
 #include "driver/motor/motor.c"
+
 #include "driver/wifi/wifi.h"
 #include "driver/wifi/tcp_server.h"
 
@@ -214,8 +215,8 @@ void vLaunch(void)
 {
     initialize_mutex();
 
-    // TaskHandle_t motorTaskHandle;
-    // xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+    TaskHandle_t motorTaskHandle;
+    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
 
     TaskHandle_t tempTaskHandle;
     xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
