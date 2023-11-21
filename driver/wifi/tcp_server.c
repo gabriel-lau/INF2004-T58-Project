@@ -7,12 +7,12 @@
 
 #include "lwip/pbuf.h"
 #include "lwip/tcp.h"
-#include "lwipopts.h"
 
 #include "tcp_server.h"
 
+// Declare a mutex globally
+SemaphoreHandle_t client_pcb_mutex;
 static struct tcp_pcb *client_pcb = NULL;
-void send_message(const char *message);
 
 static void tcp_server_err(void *arg, err_t err)
 {
@@ -72,27 +72,45 @@ static bool tcp_server_open(void)
     return true;
 }
 
+void initialize_mutex(void)
+{
+    // In your initialization function, create the mutex
+    client_pcb_mutex = xSemaphoreCreateMutex();
+}
+
 void send_message(const char *message)
 {
-    if (client_pcb)
+    if (xSemaphoreTake(client_pcb_mutex, portMAX_DELAY))
     {
-        // cyw43_arch_lwip_begin IS needed
-        cyw43_arch_lwip_check();
-
-        err_t send_err = tcp_write(client_pcb, message, strlen(message), TCP_WRITE_FLAG_COPY);
-
-        if (send_err != ERR_OK)
+        if (client_pcb)
         {
-            printf("Failed to write data %d\n", send_err);
+            // cyw43_arch_lwip_begin IS needed
+            // cyw43_arch_lwip_check();
+
+            err_t send_err = tcp_write(client_pcb, message, strlen(message), TCP_WRITE_FLAG_COPY);
+
+            if (send_err != ERR_OK)
+            {
+                printf("Failed to write data %d\n", send_err);
+            }
+            else
+            {
+                printf("Data sent to client: %s\n", message);
+            }
+            xSemaphoreGive(client_pcb_mutex);
+            return;
         }
         else
         {
-            printf("Data sent to client: %s\n", message);
+            printf("No client connected\n");
+            xSemaphoreGive(client_pcb_mutex);
+            return;
         }
     }
     else
     {
-        printf("No client connected\n");
+        printf("Failed to take mutex\n");
+        return;
     }
 }
 
@@ -103,11 +121,5 @@ void run_tcp_server(void)
         printf("Failed to open TCP server\n");
         return;
     }
-
-    // Wait for the server to complete its task
-    while (1)
-    {
-        cyw43_arch_poll();
-        sleep_ms(1000);
-    }
+    return;
 }

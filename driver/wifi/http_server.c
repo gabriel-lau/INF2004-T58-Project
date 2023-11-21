@@ -8,10 +8,6 @@
 #include "ssi.h"
 #include "cgi.h"
 
-// WIFI Credentials - take care if pushing to github!
-// const char WIFI_SSID[] = "";
-// const char WIFI_PASSWORD[] = "";
-
 void run_http_server() {
     // Initialise web server
     httpd_init();
@@ -26,12 +22,4 @@ void run_http_server() {
     cgi_init();
     printf("CGI Handler initialised\n");
     printf("\n");
-
-    // // Infinite loop
-    // // for (;;);
-    // while (1){
-    //     // fgets(console_input, sizeof(console_input), stdin);
-    //     // printf("entered: %s", console_input);
-    // };  
-
 }

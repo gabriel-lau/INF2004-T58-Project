@@ -14,7 +14,7 @@ app.use(
   })
 );
 
-const HOST = "192.168.58.141"; // Replace with the IP address of your server
+const HOST = "192.168.1.84"; // Replace with the IP address of your server
 const PORT = 4242; // Replace with the port you're using
 
 const client = new net.Socket();

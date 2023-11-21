@@ -5,6 +5,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <math.h>
 #include "pico/stdlib.h"
@@ -16,20 +17,24 @@
 #include "queue.h"
 
 #include "hardware/gpio.h"
+#include "hardware/pwm.h"
 #include "hardware/adc.h"
 #include "hardware/timer.h"
-#include "hardware/pwm.h"
 
 #include "driver/motor/motor.c"
 #include "driver/wifi/wifi.h"
+#include "driver/wifi/tcp_server.h"
 
-#define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
+#define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 
 #ifndef RUN_FREERTOS_ON_CORE
 #define RUN_FREERTOS_ON_CORE 0
 #endif
 
-#define TEST_TASK_PRIORITY				( tskIDLE_PRIORITY + 1UL )
+#define TEST_TASK_PRIORITY (tskIDLE_PRIORITY + 1UL)
+
+// Message buffer handle
+static MessageBufferHandle_t xWifiMessageBuffer;
 
 // GPIO pins for MOTOR
 int INPUT_1_LEFT = 12;
@@ -103,8 +108,49 @@ void motorTask(void *pvParameters)
     }
 }
 
+// Read temperature from ADC
+float read_onboard_temperature()
+{
+    /* 12-bit conversion, assume max value == ADC_VREF == 3.3 V */
+    const float conversionFactor = 3.3f / (1 << 12);
+
+    float adc = (float)adc_read() * conversionFactor;
+    float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
+
+    return tempC;
+}
+void tempTask(void *pvParameters)
+{
+    float temperature = 0.0;
+
+    // Setup temp sensor adc
+    adc_init();
+    adc_set_temp_sensor_enabled(true);
+    adc_select_input(4);
+
+    while (true)
+    {
+        vTaskDelay(1000); // Wait 1s
+        temperature = read_onboard_temperature();
+
+        // Convert float to JSON string
+        char temperatureBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
+        snprintf(temperatureBuffer, sizeof(temperatureBuffer), "{\"temp\": %f}", temperature);
+
+        // Send JSON data to wifiTask
+        xMessageBufferSend(
+            xWifiMessageBuffer,            /* The message buffer to write to. */
+            (void *)temperatureBuffer,     /* The source of the data to send. */
+            strlen(temperatureBuffer) + 1, /* Include null-terminator in length */
+            0);                            /* Do not block, should the buffer be full. */
+    }
+};
+
 void wifiTask(void *pvParameters)
 {
+    // const char *receivedData;
+    char receivedData[mbaTASK_MESSAGE_BUFFER_SIZE];
+
     if (cyw43_arch_init())
     {
         printf("Failed to initialise\n");
@@ -124,23 +170,60 @@ void wifiTask(void *pvParameters)
     // Print a success message once connected
     printf("Connected to WiFi! \n\n");
 
-    // Create the HTTP server task
-    printf("Created HTTP Server Task\n");
-    // run_http_server();
+    wifiSetup();
 
-    // Create the TCP server task
-    printf("Created TCP Server Task\n");
-    // run_tcp_server();
+    while (1)
+    {
+        #if PICO_CYW43_ARCH_POLL
+                // if you are using pico_cyw43_arch_poll, then you must poll periodically from your
+                // main loop (not from a timer) to check for Wi-Fi driver or lwIP work that needs to be done.
+                cyw43_arch_poll();
+                // you can poll as often as you like, however if you have nothing else to do you can
+                // choose to sleep until either a specified time, or cyw43_arch_poll() has work to do:
+                cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
+        #else
+                // if you are not using pico_cyw43_arch_poll, then WiFI driver and lwIP work
+                // is done via interrupt in the background. This sleep is just an example of some (blocking)
+                // work you might be doing.
+                sleep_ms(1000);
+        #endif
+        vTaskDelay(5000);
 
-    for (;;);
+        // Read data from the message buffer
+        size_t bytesRead = xMessageBufferReceive(xWifiMessageBuffer, receivedData, sizeof(receivedData), portMAX_DELAY);
+
+        // Check if data was received
+        if (bytesRead > 0)
+        {
+            // Null-terminate the received data (assuming it's a string)
+            printf("Received message buffer. Received data: %s\n", receivedData);
+
+            receivedData[bytesRead] = '\0';
+
+            // Send data to the TCP server
+            send_message(receivedData);
+        }
+        else
+        {
+            printf("Failed to receive message buffer. Received data: %s\n", receivedData);
+        }
+    };
 }
 
-void vLaunch( void) {
-    TaskHandle_t motorTaskHandle;
-    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
-    
+void vLaunch(void)
+{
+    initialize_mutex();
+
+    // TaskHandle_t motorTaskHandle;
+    // xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+
+    TaskHandle_t tempTaskHandle;
+    xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
     TaskHandle_t wifiTaskHandle;
-    xTaskCreate(wifiTask, "TestWifiThread", configMINIMAL_STACK_SIZE, NULL, 8, &wifiTaskHandle);
+    xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 3, &wifiTaskHandle);
+
+    // Create the message buffer
+    xWifiMessageBuffer = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
     // we must bind the main task to one core (well at least while the init is called)
@@ -152,28 +235,27 @@ void vLaunch( void) {
     vTaskStartScheduler();
 }
 
-int main( void )
-{
+int main(void){
     stdio_init_all();
 
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
-#if ( portSUPPORT_SMP == 1 )
-    rtos_name = "FreeRTOS SMP";
-#else
-    rtos_name = "FreeRTOS";
-#endif
+    #if (portSUPPORT_SMP == 1)
+        rtos_name = "FreeRTOS SMP";
+    #else
+        rtos_name = "FreeRTOS";
+    #endif
 
-#if ( portSUPPORT_SMP == 1 ) && ( configNUM_CORES == 2 )
-    printf("Starting %s on both cores:\n", rtos_name);
-    vLaunch();
-#elif ( RUN_FREERTOS_ON_CORE == 1 )
-    printf("Starting %s on core 1:\n", rtos_name);
-    multicore_launch_core1(vLaunch);
-    while (true);
-#else
-    printf("Starting %s on core 0:\n", rtos_name);
-    vLaunch();
-#endif
-    return 0;
+    #if (portSUPPORT_SMP == 1) && (configNUM_CORES == 2)
+        printf("Starting %s on both cores:\n", rtos_name);
+        vLaunch();
+    #elif (RUN_FREERTOS_ON_CORE == 1)
+        printf("Starting %s on core 1:\n", rtos_name);
+        multicore_launch_core1(vLaunch);
+        while (true);
+    #else
+        printf("Starting %s on core 0:\n", rtos_name);
+        vLaunch();
+    #endif
+        return 0;
 }
