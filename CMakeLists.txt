@@ -61,6 +61,9 @@ target_link_libraries(main
         hardware_adc
 		hardware_pwm
         FreeRTOS-Kernel-Heap4 # FreeRTOS kernel and dynamic heap
+        hardware_i2c
         )
 pico_enable_stdio_usb(main 1)
 pico_add_extra_outputs(main)
+
+# target_link_libraries(magnometer PRIVATE pico_stdlib hardware_gpio hardware_i2c)

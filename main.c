@@ -22,6 +22,7 @@
 #include "driver/motor/motor.h"
 #include "driver/ultrasonic/ultrasonic.h"
 #include "driver/irline/irline.h"
+#include "driver/magnometer/magnometer.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE       ( 60 )
 
@@ -100,12 +101,15 @@ void motorTask(void *pvParameters)
         {
             moveBackward();
         }        
-        // printf("LEFT IS HERE\n");
-        //irLine(IR_PIN_LEFT);
-        //printf("RIGHT IS HERE\n");
-        //irLine(IR_PIN_RIGHT);
+        printf("LEFT IS HERE\n");
+        irLine(IR_PIN_LEFT);
+        printf("RIGHT IS HERE\n");
+        irLine(IR_PIN_RIGHT);
         vTaskDelay(500);
         printf("\n");
+        printf("FROM HERE ON IS MAGNO\n");
+        magnoSetup();
+        printf("New Heading: %d",getHeading());
     }
 }
 
