@@ -26,6 +26,8 @@
 #include "driver/wifi/wifi.h"
 #include "driver/wifi/tcp_server.h"
 
+#include "driver/irline/barcode/barcode.h"
+
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 
 #ifndef RUN_FREERTOS_ON_CORE
@@ -34,8 +36,8 @@
 
 #define TEST_TASK_PRIORITY (tskIDLE_PRIORITY + 1UL)
 
-// Message buffer handle
-static MessageBufferHandle_t xWifiMessageBuffer;
+// // Message buffer handle
+// static MessageBufferHandle_t xBarcodeMessageBuffer;
 
 // GPIO pins for MOTOR
 int INPUT_1_LEFT = 12;
@@ -109,43 +111,44 @@ void motorTask(void *pvParameters)
     }
 }
 
-// Read temperature from ADC
-float read_onboard_temperature()
-{
-    /* 12-bit conversion, assume max value == ADC_VREF == 3.3 V */
-    const float conversionFactor = 3.3f / (1 << 12);
+// // Read temperature from ADC
+// float read_onboard_temperature()
+// {
+//     /* 12-bit conversion, assume max value == ADC_VREF == 3.3 V */
+//     const float conversionFactor = 3.3f / (1 << 12);
 
-    float adc = (float)adc_read() * conversionFactor;
-    float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
+//     float adc = (float)adc_read() * conversionFactor;
+//     float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
 
-    return tempC;
-}
-void tempTask(void *pvParameters)
-{
-    float temperature = 0.0;
+//     return tempC;
+// }
 
-    // Setup temp sensor adc
-    adc_init();
-    adc_set_temp_sensor_enabled(true);
-    adc_select_input(4);
+// void tempTask(void *pvParameters)
+// {
+//     float temperature = 0.0;
 
-    while (true)
-    {
-        vTaskDelay(1000); // Wait 1s
-        temperature = read_onboard_temperature();
+//     // Setup temp sensor adc
+//     adc_init();
+//     adc_set_temp_sensor_enabled(true);
+//     adc_select_input(4);
 
-        // Convert float to JSON string
-        char temperatureBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
-        snprintf(temperatureBuffer, sizeof(temperatureBuffer), "{\"temp\": %f}", temperature);
+//     while (true)
+//     {
+//         vTaskDelay(1000); // Wait 1s
+//         temperature = read_onboard_temperature();
 
-        // Send JSON data to wifiTask
-        xMessageBufferSend(
-            xWifiMessageBuffer,            /* The message buffer to write to. */
-            (void *)temperatureBuffer,     /* The source of the data to send. */
-            strlen(temperatureBuffer) + 1, /* Include null-terminator in length */
-            0);                            /* Do not block, should the buffer be full. */
-    }
-};
+//         // Convert float to JSON string
+//         char temperatureBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
+//         snprintf(temperatureBuffer, sizeof(temperatureBuffer), "{\"temp\": %f}", temperature);
+
+//         // Send JSON data to wifiTask
+//         xMessageBufferSend(
+//             xBarcodeMessageBuffer,            /* The message buffer to write to. */
+//             (void *)temperatureBuffer,     /* The source of the data to send. */
+//             strlen(temperatureBuffer) + 1, /* Include null-terminator in length */
+//             0);                            /* Do not block, should the buffer be full. */
+//     }
+// };
 
 void wifiTask(void *pvParameters)
 {
@@ -191,22 +194,20 @@ void wifiTask(void *pvParameters)
         vTaskDelay(5000);
 
         // Read data from the message buffer
-        size_t bytesRead = xMessageBufferReceive(xWifiMessageBuffer, receivedData, sizeof(receivedData), portMAX_DELAY);
+        size_t bytesRead = xMessageBufferReceive(xBarcodeMessageBuffer, receivedData, sizeof(receivedData), portMAX_DELAY);
 
         // Check if data was received
         if (bytesRead > 0)
         {
             // Null-terminate the received data (assuming it's a string)
-            // printf("Received message buffer. Received data: %s\n", receivedData);
-
+            printf("Received message buffer. Received data: %s\n", receivedData);
             receivedData[bytesRead] = '\0';
-
             // Send data to the TCP server
             send_message(receivedData);
         }
         else
         {
-            // printf("Failed to receive message buffer. Received data: %s\n", receivedData);
+            printf("Failed to receive message buffer. Received data: %s\n", receivedData);
         }
     };
 }
@@ -218,13 +219,14 @@ void vLaunch(void)
     TaskHandle_t motorTaskHandle;
     xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
 
-    TaskHandle_t tempTaskHandle;
-    xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
+    // TaskHandle_t tempTaskHandle;
+    // xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
+
     TaskHandle_t wifiTaskHandle;
     xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 3, &wifiTaskHandle);
 
     // Create the message buffer
-    xWifiMessageBuffer = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
+    xBarcodeMessageBuffer = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
     // we must bind the main task to one core (well at least while the init is called)
@@ -238,6 +240,10 @@ void vLaunch(void)
 
 int main(void){
     stdio_init_all();
+
+    // Start Barcode
+    printf("Init barcode\n");
+    barcode_init();
 
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;

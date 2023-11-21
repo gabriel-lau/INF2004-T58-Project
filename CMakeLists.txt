@@ -52,11 +52,12 @@ set(WIFI_PASSWORD "${WIFI_PASSWORD}" CACHE INTERNAL "WiFi password for examples"
 ########################################################## CMAKE MAIN.c file ##########################################################
 #######################################################################################################################################
 add_executable(main
-				main.c
+        main.c
         driver/wifi/wifi.c
         driver/wifi/http_server.c
         driver/wifi/tcp_server.c
-				)
+        driver/irline/barcode/barcode.c
+        )
 
 target_compile_definitions(main PRIVATE
         WIFI_SSID=\"${WIFI_SSID}\"
