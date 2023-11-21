@@ -108,7 +108,7 @@ void motorTask(void *pvParameters)
         printf("\n");
         printf("FROM HERE ON IS MAGNO\n");
         magnoSetup();
-        printf("New Heading: %d",getHeading());
+        printf("New Heading: %d\n",getHeading());
         vTaskDelay(500);
     }
 }
@@ -119,7 +119,7 @@ void ultrasonicTask(void *pvParameters)
     while (1)
     {
         ultraSetup();
-        setDir(getNewDistance());
+        setDir(getCm(TRIG_PIN, ECHO_PIN));
         vTaskDelay(500);
     }
 }
