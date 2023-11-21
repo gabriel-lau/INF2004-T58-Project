@@ -64,11 +64,11 @@ const uint IR_PIN_LEFT = 5;
 void setDir(int distance) // change direction if meet obstacle
 {
     printf("Distance: %d cm\n", distance);
-    if (distance <= 8)
+    if (distance <= 15)
     {
         moveBackward();
-        printf("%d",distance);
-        printf("Stop\n");
+        //printf("%d",distance);
+        //printf("Stop\n");
         xQueueSend(xControlQueue, "s", portMAX_DELAY);
     }
     else 
@@ -101,14 +101,20 @@ void motorTask(void *pvParameters)
         {
             moveBackward();
         }        
-        printf("LEFT IS HERE\n");
-        irLine(IR_PIN_LEFT);
+        if(irLine(IR_PIN_LEFT) == 1){
+            turnRight();
+            printf("Turn Right\n");
+        }
         printf("RIGHT IS HERE\n");
         irLine(IR_PIN_RIGHT);
+        if(irLine(IR_PIN_RIGHT) == 1){
+            turnLeft();
+            printf("Turn Left\n");
+        }
         printf("\n");
-        printf("FROM HERE ON IS MAGNO\n");
+        //printf("FROM HERE ON IS MAGNO\n");
         magnoSetup();
-        printf("New Heading: %d\n",getHeading());
+        //printf("New Heading: %d\n",getHeading());
         vTaskDelay(500);
     }
 }
