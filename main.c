@@ -197,7 +197,7 @@ void wifiTask(void *pvParameters)
         if (bytesRead > 0)
         {
             // Null-terminate the received data (assuming it's a string)
-            printf("Received message buffer. Received data: %s\n", receivedData);
+            // printf("Received message buffer. Received data: %s\n", receivedData);
 
             receivedData[bytesRead] = '\0';
 
@@ -206,7 +206,7 @@ void wifiTask(void *pvParameters)
         }
         else
         {
-            printf("Failed to receive message buffer. Received data: %s\n", receivedData);
+            // printf("Failed to receive message buffer. Received data: %s\n", receivedData);
         }
     };
 }

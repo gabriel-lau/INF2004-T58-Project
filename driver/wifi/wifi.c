@@ -24,13 +24,13 @@ void wifiSetup()
 void testCase1()
 {
     // Create the test task
-    printf("Started On\n");
+    // printf("Started On\n");
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
 }
 
 void testCase2()
 {
     // Create the test task
-    printf("Started Off\n");
+    // printf("Started Off\n");
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 }
