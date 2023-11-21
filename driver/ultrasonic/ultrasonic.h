@@ -5,6 +5,8 @@
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
 
+const int TRIG_PIN = 2;
+const int ECHO_PIN = 3;
 
 int timeout = 26100;
 
@@ -16,17 +18,15 @@ uint64_t pulseLength;
 
 int newDistance = 0;
 
-int getDistance()
-{
+int getNewDistance() {
     return newDistance;
 }
 
-void gpio_distance_callback(uint gpio, uint32_t events)
-{
+void gpio_distance_callback(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_RISE)
     {
         startTime = get_absolute_time();
-        // printf("Start time: %lld\n", startTime);
+        //printf("Start time: %lld\n", startTime);
     }
     else if (events & GPIO_IRQ_EDGE_FALL)
     {
@@ -64,4 +64,12 @@ void getCm(uint trigPin, uint echoPin)
 {
     getPulse(trigPin, echoPin);
     //return pulseLength / 29 / 2;
+}
+
+void ultraSetup() {
+
+        setupUltrasonicPins(TRIG_PIN, ECHO_PIN);
+        getCm(TRIG_PIN, ECHO_PIN);
+        sleep_ms(1000);
+    
 }

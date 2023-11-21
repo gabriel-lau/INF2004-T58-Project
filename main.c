@@ -50,8 +50,8 @@ const int MAG_SDA = 0;
 const int MAG_SCL = 1;
 
 // GPIO pins for ULTRASONIC
-const int TRIGGER_PIN = 2;
-const int ECHO_PIN = 3;
+//const int TRIGGER_PIN = 2;
+//const int ECHO_PIN = 3;
 
 // GPIO pins for IR
 const uint IR_PIN_RIGHT = 4;
@@ -60,7 +60,7 @@ const uint IR_PIN_LEFT = 5;
 // get direction by distance
 void setDir(int distance) // change direction if meet obstacle
 {
-    if (distance <= 5)
+    if (distance <= 8)
     {
         moveBackward();
         printf("%d",distance);
@@ -84,16 +84,16 @@ void motorTask(void *pvParameters)
     while (1)
     {   
         moveForward();
-        /*
+        
         printf("LEFT IS HERE\n");
         irLine(IR_PIN_LEFT);
         printf("RIGHT IS HERE\n");
         irLine(IR_PIN_RIGHT);
-        setupUltrasonicPins(TRIGGER_PIN, ECHO_PIN);
-        getCm(TRIGGER_PIN, ECHO_PIN);
-        setDir(getDistance());
+        ultraSetup();
+        //getNewDistance();
+        setDir(getNewDistance());
         vTaskDelay(1000);
-        printf("\n");*/
+        printf("\n");
     }
 }
 
