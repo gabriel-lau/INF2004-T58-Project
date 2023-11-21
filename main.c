@@ -66,6 +66,8 @@ void setDir(int distance) // change direction if meet obstacle
     printf("Distance: %d cm\n", distance);
     if (distance <= 15)
     {
+        stop();
+        sleep_ms(1000);
         moveBackward();
         //printf("%d",distance);
         //printf("Stop\n");
@@ -73,6 +75,7 @@ void setDir(int distance) // change direction if meet obstacle
     }
     else 
     {
+        sleep_ms(1000);
         moveForward();
         printf("Forward\n");
         xQueueSend(xControlQueue, "f", portMAX_DELAY);
