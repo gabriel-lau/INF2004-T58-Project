@@ -45,9 +45,9 @@ double rightDutyCycle = 15625;
 
 // PID constants
 // PID gains 
-float Kp = 2.0; 
-float Ki = 0.2; 
-float Kd = 0.02; 
+float Kp = 1.0; 
+float Ki = 0.1; 
+float Kd = 0.01; 
 
 float leftPrevError = 0;
 float leftIntegral = 0;
@@ -79,11 +79,11 @@ void motorSetup()
 
 // Function to compute the control signal
 float controlLoop(float setpoint, float current_value, float *integral, float *prev_error) {
-    float error = current_value - setpoint;
+    float error =  setpoint - current_value;
     *integral += error;
     float derivative = error - *prev_error;
-    float control_signal = Kp * error + Ki * (*integral) + Kd * derivative * 0.1;
-    *prev_error = current_value;
+    float control_signal = Kp * error + Ki * (*integral) + Kd * derivative;
+    *prev_error = error;
     return control_signal;
 }
 
