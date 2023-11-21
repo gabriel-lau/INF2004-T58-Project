@@ -31,6 +31,8 @@
 
 #define TEST_TASK_PRIORITY				( tskIDLE_PRIORITY + 1UL )
 
+static QueueHandle_t xControlQueue;
+
 // GPIO pins for MOTOR
 int INPUT_1_LEFT = 12;
 int INPUT_2_LEFT = 13;
@@ -50,8 +52,8 @@ const int MAG_SDA = 0;
 const int MAG_SCL = 1;
 
 // GPIO pins for ULTRASONIC
-//const int TRIGGER_PIN = 2;
-//const int ECHO_PIN = 3;
+int TRIG_PIN = 2;
+int ECHO_PIN = 3;
 
 // GPIO pins for IR
 const uint IR_PIN_RIGHT = 4;
@@ -60,16 +62,19 @@ const uint IR_PIN_LEFT = 5;
 // get direction by distance
 void setDir(int distance) // change direction if meet obstacle
 {
+    printf("Distance: %d cm\n", distance);
     if (distance <= 8)
     {
         moveBackward();
         printf("%d",distance);
         printf("Stop\n");
+        xQueueSend(xControlQueue, "s", portMAX_DELAY);
     }
     else 
     {
         moveForward();
         printf("Forward\n");
+        xQueueSend(xControlQueue, "f", portMAX_DELAY);
     }
 }
 
@@ -81,26 +86,49 @@ void motorTask(void *pvParameters)
     gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
 
     motorSetup();
+    char xReceivedChar;
+    size_t xReceivedBytes;
     while (1)
     {   
-        moveForward();
-        
-        printf("LEFT IS HERE\n");
-        irLine(IR_PIN_LEFT);
-        printf("RIGHT IS HERE\n");
-        irLine(IR_PIN_RIGHT);
+        xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY);
+        printf("Received %c\n", xReceivedChar);
+        if  (xReceivedChar == 'f')
+        {
+            moveForward();
+        }
+        else if (xReceivedChar == 's')
+        {
+            moveBackward();
+        }        
+        // printf("LEFT IS HERE\n");
+        //irLine(IR_PIN_LEFT);
+        //printf("RIGHT IS HERE\n");
+        //irLine(IR_PIN_RIGHT);
+        vTaskDelay(500);
+        printf("\n");
+    }
+}
+
+void ultrasonicTask(void *pvParameters)
+{
+    
+    while (1)
+    {
         ultraSetup();
-        //getNewDistance();
         setDir(getNewDistance());
         vTaskDelay(1000);
-        printf("\n");
     }
 }
 
 void vLaunch( void) {
 
     TaskHandle_t motorTaskHandle;
-    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+    xTaskCreate(motorTask, "motorThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+
+    TaskHandle_t ultrasonicTaskHandle;
+    xTaskCreate(ultrasonicTask, "ultrasonicThread", configMINIMAL_STACK_SIZE, NULL, 8, &ultrasonicTaskHandle);
+
+    xControlQueue = xQueueCreate(10, sizeof(char));
 
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1

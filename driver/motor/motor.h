@@ -108,7 +108,7 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - leftLastTime;
             double leftSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            //printf("L speed: %f\n", leftSpeed);
+            // printf("L speed: %f\n", leftSpeed);
             // float diff = controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError) * 10;
             // printf("L diff: %f\n", diff);
             // leftDutyCycle += diff;
@@ -119,7 +119,7 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - rightLastTime;
             double rightSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            //printf("R speed: %f\n", rightSpeed);
+            // printf("R speed: %f\n", rightSpeed);
             // float diff = controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError) * 10;
             // printf("R diff: %f\n", diff);
             // rightDutyCycle += diff;

@@ -5,8 +5,8 @@
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
 
-const int TRIG_PIN = 2;
-const int ECHO_PIN = 3;
+extern int TRIG_PIN;
+extern int ECHO_PIN;
 
 int timeout = 26100;
 
@@ -30,22 +30,22 @@ void gpio_distance_callback(uint gpio, uint32_t events) {
     }
     else if (events & GPIO_IRQ_EDGE_FALL)
     {
-        printf("Start time: %lld\n", startTime);
+        // printf("Start time: %lld\n", startTime);
         endTime = get_absolute_time();
-        printf("End time: %lld\n", endTime);
+        // printf("End time: %lld\n", endTime);
         pulseLength = absolute_time_diff_us(startTime, endTime);
         int distance = pulseLength / 29 / 2;
-        printf("Distance: %d cm\n", distance);
+        //printf("Distance: %d cm\n", distance);
         newDistance = distance;
     }
 }
 
-void setupUltrasonicPins(uint trigPin, uint echoPin)
+void setupUltrasonicPins()
 {
-    gpio_init(trigPin);
-    gpio_init(echoPin);
-    gpio_set_dir(trigPin, GPIO_OUT);
-    gpio_set_dir(echoPin, GPIO_IN);
+    gpio_init(TRIG_PIN);
+    gpio_init(ECHO_PIN);
+    gpio_set_dir(TRIG_PIN, GPIO_OUT);
+    gpio_set_dir(ECHO_PIN, GPIO_IN);
 }
 
 void getPulse(uint trigPin, uint echoPin)
@@ -67,9 +67,7 @@ void getCm(uint trigPin, uint echoPin)
 }
 
 void ultraSetup() {
-
         setupUltrasonicPins(TRIG_PIN, ECHO_PIN);
         getCm(TRIG_PIN, ECHO_PIN);
         sleep_ms(1000);
-    
 }
