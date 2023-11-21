@@ -163,8 +163,9 @@ void moveForward()
 
 void moveBackward()
 {
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 1);
     gpio_put(INPUT_1_RIGHT, 0);
@@ -173,8 +174,9 @@ void moveBackward()
 
 void turnLeft()
 {
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 1);
     gpio_put(INPUT_1_RIGHT, 1);
@@ -183,8 +185,9 @@ void turnLeft()
 
 void turnRight()
 {
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
     gpio_put(INPUT_1_LEFT, 1);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
@@ -193,8 +196,9 @@ void turnRight()
 
 void stop()
 {
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    //pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
