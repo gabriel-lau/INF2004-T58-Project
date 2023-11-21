@@ -105,11 +105,11 @@ void motorTask(void *pvParameters)
         irLine(IR_PIN_LEFT);
         printf("RIGHT IS HERE\n");
         irLine(IR_PIN_RIGHT);
-        vTaskDelay(500);
         printf("\n");
         printf("FROM HERE ON IS MAGNO\n");
         magnoSetup();
         printf("New Heading: %d",getHeading());
+        vTaskDelay(500);
     }
 }
 
@@ -120,7 +120,7 @@ void ultrasonicTask(void *pvParameters)
     {
         ultraSetup();
         setDir(getNewDistance());
-        vTaskDelay(1000);
+        vTaskDelay(500);
     }
 }
 
