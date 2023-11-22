@@ -91,11 +91,11 @@ void send_message(const char *message)
 
             if (send_err != ERR_OK)
             {
-                printf("Failed to write data %d\n", send_err);
+                printf("Failed to write data %d\n\n", send_err);
             }
             else
             {
-                printf("Data sent to client: %s\n", message);
+                printf("Data sent to client: %s\n\n", message);
             }
             xSemaphoreGive(client_pcb_mutex);
             return;

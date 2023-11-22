@@ -293,7 +293,8 @@ The map needs to show obstacle is detected and then will need to reflect on the 
             console.log("Data: ", parsedData); // You can process the server's response here
             console.log("Temperature:", temperature);
 
-            barcodeValue.innerText = temperature;
+            barcodeValue.innerText =
+              barcodeValue.innerText + ", " + temperature;
           })
           .catch((error) => {
             console.error("Error:", error);

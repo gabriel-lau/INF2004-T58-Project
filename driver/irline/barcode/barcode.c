@@ -3,11 +3,6 @@
 #include "pico/stdlib.h"
 #include "pico/time.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "message_buffer.h"
-#include "queue.h"
-
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "hardware/adc.h"
@@ -26,19 +21,6 @@ void reset_barcode_params()
   coded_barcode = 0;
   decoded_barcode = 0;
   bar_index = 0;
-  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &check_if_wall); // enable rising edge interrupt
-}
-
-void barcode_init()
-{
-  printf("initializing barcode\n");
-  // Initialize the ADC
-  adc_init();
-  adc_gpio_init(BARCODE_SENSOR_PIN);
-  adc_select_input(BARCODE_ADC_CHANNEL);
-
-  reset_barcode_params();
-
   gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &check_if_wall); // enable rising edge interrupt
 }
 
@@ -63,14 +45,9 @@ void check_if_wall()
 
       printf("Barcode Detected please reverse robot\n");
       // TODO: Tell main to stop motors and reverse
-      init_read_barcode();
+      // init_read_barcode();
     }
   }
-}
-
-void init_read_barcode()
-{
-  xTaskCreate(read_barcode, "BarcodeThread", configMINIMAL_STACK_SIZE, NULL, 4, &barcodeTaskHandle);
 }
 
 char decode_barcode(int black_bar_times[], int white_bar_times[])
@@ -148,8 +125,6 @@ char decode_barcode(int black_bar_times[], int white_bar_times[])
 
 char barcode_to_char(int black_bar_times[], int white_bar_times[])
 {
-  printf("Decoding barcode");
-
   int result = 0;
 
   if (black_bar_times[0] && black_bar_times[4])
@@ -184,13 +159,12 @@ char barcode_to_char(int black_bar_times[], int white_bar_times[])
 
   printf("Result: %d\n", result);
   char decoded_char = code_39_characters[result];
-  printf("Decoded character: %c\n", decoded_char);
+  printf("Decoded character: %c\n\n", decoded_char);
   return decoded_char;
 }
 
-void read_barcode()
+char init_read_barcode()
 {
-  vTaskDelay(pdMS_TO_TICKS(1000));
   while (barcodeFlags.isBarcode)
   {
     uint16_t reading = get_ir_reading();
@@ -213,27 +187,14 @@ void read_barcode()
     {
       char barcode_char = decode_barcode(black_bar_times, white_bar_times);
 
-      printf("%c", barcode_char);
-      // Convert float to JSON string
-      char barcodeBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
-      snprintf(barcodeBuffer, sizeof(barcodeBuffer), "{\"temp\": %c}", barcode_char);
-
-      // Send JSON data to wifiTask
-      xMessageBufferSend(
-          xBarcodeMessageBuffer,     /* The message buffer to write to. */
-          (void *)barcodeBuffer,     /* The source of the data to send. */
-          strlen(barcodeBuffer) + 1, /* Include null-terminator in length */
-          0);                        /* Do not block, should the buffer be full. */
-
       barcodeFlags.isPrevBlackBar = false;
       white_bar_times[4] = 0;
       bar_index = 0;
+      return barcode_char;
     }
     if (barcodeFlags.limitter > BARCODE_CHAR_LIMIT)
     {
       reset_barcode_params();
-      vTaskDelete(barcodeTaskHandle);
     }
-    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }

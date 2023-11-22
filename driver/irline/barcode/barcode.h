@@ -13,19 +13,13 @@
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 
-void barcode_init();
+// void barcode_init();
 int get_ir_reading();
 void check_if_wall();
-void init_read_barcode();
-void read_barcode();
+char init_read_barcode();
 void reset_barcode_params();
 char barcode_to_char();
-
-// Message buffer handle
-static MessageBufferHandle_t xBarcodeMessageBuffer;
-
-// Barcode Task handle
-static TaskHandle_t barcodeTaskHandle;
+char decode_barcode(int black_bar_times[], int white_bar_times[]);
 
 enum BarType
 {

@@ -36,8 +36,13 @@
 
 #define TEST_TASK_PRIORITY (tskIDLE_PRIORITY + 1UL)
 
-// // Message buffer handle
-// static MessageBufferHandle_t xBarcodeMessageBuffer;
+// Message buffer handle
+static MessageBufferHandle_t xBarcodeMessageBuffer;
+
+// Define Tasks
+TaskHandle_t motorTaskHandle;
+TaskHandle_t wifiTaskHandle;
+TaskHandle_t barcodeTaskHandle;
 
 // GPIO pins for MOTOR
 int INPUT_1_LEFT = 12;
@@ -65,22 +70,22 @@ const int ECHO_PIN = 3;
 
 void motorTask(void *pvParameters)
 {
-    //Init Left GPIO
+    // Init Left GPIO
     gpio_init(INPUT_1_LEFT);
     gpio_init(INPUT_2_LEFT);
     gpio_init(PWM_LEFT);
 
-    //Init Right GPIO
+    // Init Right GPIO
     gpio_init(INPUT_1_RIGHT);
     gpio_init(INPUT_2_RIGHT);
     gpio_init(PWM_RIGHT);
 
-    //Set Left GPIO to out power board
+    // Set Left GPIO to out power board
     gpio_set_dir(INPUT_1_LEFT, GPIO_OUT);
     gpio_set_dir(INPUT_2_LEFT, GPIO_OUT);
     gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
 
-    //Set Right GPIO to out power board
+    // Set Right GPIO to out power board
     gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
     gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
     gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
@@ -150,6 +155,41 @@ void motorTask(void *pvParameters)
 //     }
 // };
 
+void barcodeTask(void *pvParameters)
+{
+    printf("initializing barcode\n");
+    // Initialize the ADC
+    adc_init();
+    adc_gpio_init(BARCODE_SENSOR_PIN);
+    adc_select_input(BARCODE_ADC_CHANNEL);
+
+    reset_barcode_params();
+
+    gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &check_if_wall); // enable rising edge interrupt
+    // vTaskDelay(pdMS_TO_TICKS(1000));
+    while (true)
+    {
+        char barcode_char = init_read_barcode();
+
+        // printf("%c", barcode_char);
+
+        if (barcode_char != '\0')
+        {
+            // Convert float to JSON string
+            char barcodeBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
+            snprintf(barcodeBuffer, sizeof(barcodeBuffer), "{\"temp\": \"%c\"}", barcode_char);
+
+            // Send JSON data to wifiTask
+            xMessageBufferSend(
+                xBarcodeMessageBuffer,     /* The message buffer to write to. */
+                (void *)barcodeBuffer,     /* The source of the data to send. */
+                strlen(barcodeBuffer) + 1, /* Include null-terminator in length */
+                0);                        /* Do not block, should the buffer be full. */
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+};
+
 void wifiTask(void *pvParameters)
 {
     // const char *receivedData;
@@ -178,30 +218,33 @@ void wifiTask(void *pvParameters)
 
     while (1)
     {
-        #if PICO_CYW43_ARCH_POLL
-                // if you are using pico_cyw43_arch_poll, then you must poll periodically from your
-                // main loop (not from a timer) to check for Wi-Fi driver or lwIP work that needs to be done.
-                cyw43_arch_poll();
-                // you can poll as often as you like, however if you have nothing else to do you can
-                // choose to sleep until either a specified time, or cyw43_arch_poll() has work to do:
-                cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
-        #else
-                // if you are not using pico_cyw43_arch_poll, then WiFI driver and lwIP work
-                // is done via interrupt in the background. This sleep is just an example of some (blocking)
-                // work you might be doing.
-                sleep_ms(1000);
-        #endif
+#if PICO_CYW43_ARCH_POLL
+        // if you are using pico_cyw43_arch_poll, then you must poll periodically from your
+        // main loop (not from a timer) to check for Wi-Fi driver or lwIP work that needs to be done.
+        cyw43_arch_poll();
+        // you can poll as often as you like, however if you have nothing else to do you can
+        // choose to sleep until either a specified time, or cyw43_arch_poll() has work to do:
+        cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
+#else
+        // if you are not using pico_cyw43_arch_poll, then WiFI driver and lwIP work
+        // is done via interrupt in the background. This sleep is just an example of some (blocking)
+        // work you might be doing.
+        sleep_ms(1000);
+#endif
         vTaskDelay(5000);
 
         // Read data from the message buffer
-        size_t bytesRead = xMessageBufferReceive(xBarcodeMessageBuffer, receivedData, sizeof(receivedData), portMAX_DELAY);
+        size_t bytesRead = xMessageBufferReceive(xBarcodeMessageBuffer, receivedData, sizeof(receivedData) - 1, portMAX_DELAY);
 
         // Check if data was received
         if (bytesRead > 0)
         {
-            // Null-terminate the received data (assuming it's a string)
-            printf("Received message buffer. Received data: %s\n", receivedData);
+            // Null-terminate the received data
             receivedData[bytesRead] = '\0';
+
+            // Print the received data
+            printf("Received message buffer. Received data: %s\n", receivedData);
+            
             // Send data to the TCP server
             send_message(receivedData);
         }
@@ -216,14 +259,15 @@ void vLaunch(void)
 {
     initialize_mutex();
 
-    TaskHandle_t motorTaskHandle;
-    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 1, &motorTaskHandle);
 
     // TaskHandle_t tempTaskHandle;
     // xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
 
-    TaskHandle_t wifiTaskHandle;
-    xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 3, &wifiTaskHandle);
+    xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 1, &wifiTaskHandle);
+
+    // Barcode Task handle
+    xTaskCreate(barcodeTask, "BarcodeThread", configMINIMAL_STACK_SIZE, NULL, 1, &barcodeTaskHandle);
 
     // Create the message buffer
     xBarcodeMessageBuffer = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
@@ -238,31 +282,29 @@ void vLaunch(void)
     vTaskStartScheduler();
 }
 
-int main(void){
+int main(void)
+{
     stdio_init_all();
-
-    // Start Barcode
-    printf("Init barcode\n");
-    barcode_init();
 
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
-    #if (portSUPPORT_SMP == 1)
-        rtos_name = "FreeRTOS SMP";
-    #else
-        rtos_name = "FreeRTOS";
-    #endif
+#if (portSUPPORT_SMP == 1)
+    rtos_name = "FreeRTOS SMP";
+#else
+    rtos_name = "FreeRTOS";
+#endif
 
-    #if (portSUPPORT_SMP == 1) && (configNUM_CORES == 2)
-        printf("Starting %s on both cores:\n", rtos_name);
-        vLaunch();
-    #elif (RUN_FREERTOS_ON_CORE == 1)
-        printf("Starting %s on core 1:\n", rtos_name);
-        multicore_launch_core1(vLaunch);
-        while (true);
-    #else
-        printf("Starting %s on core 0:\n", rtos_name);
-        vLaunch();
-    #endif
-        return 0;
+#if (portSUPPORT_SMP == 1) && (configNUM_CORES == 2)
+    printf("Starting %s on both cores:\n", rtos_name);
+    vLaunch();
+#elif (RUN_FREERTOS_ON_CORE == 1)
+    printf("Starting %s on core 1:\n", rtos_name);
+    multicore_launch_core1(vLaunch);
+    while (true)
+        ;
+#else
+    printf("Starting %s on core 0:\n", rtos_name);
+    vLaunch();
+#endif
+    return 0;
 }
