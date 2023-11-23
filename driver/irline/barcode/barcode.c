@@ -25,6 +25,8 @@ void resetReadingParameters()
   // Reset barcode values and index
   coded_barcode = 0;
   decoded_barcode = 0;
+  bar_index = 0;
+  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt); // enable rising edge interrupt
   currentBarIndex = 0;
   // Enable GPIO interrupt for detecting barcodes
   gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
