@@ -1,70 +1,58 @@
 #ifndef BARCODE_H
 #define BARCODE_H
 
-// Configure the GPIO pin connected to the line tracking sensor
-#define BARCODE_SENSOR_PIN 26  // Change this to your sensor's pin
-#define BARCODE_ADC_CHANNEL 0  // Change this to your sensor's adc channel
-#define BARCODE_BLACK_THRESHOLD 1200
-#define BARCODE_WHITE_THRESHOLD 1000
-#define BLACK_BAR_COUNT 5
-#define WHITE_BAR_COUNT 4
 
-// Define the states of the FSM
-typedef enum {
-    STATE_WAITING_FOR_START,  // Waiting for the start signal
-    STATE_DETECTING_BLACK,    // Detecting a black bar
-    STATE_DETECTING_WHITE,    // Detecting a white bar
-} BarcodeState;
 
-// Structure to represent the mapping
-typedef struct {
-    const char* pattern;
-    char code39_character;
-} BarcodeMapping;
+// every barcode char is 9 bars
+// start w black end with black
+// 5 black bar (+0-9)
+// 4 white bar (+0,+10,+20,+30)
+// narrow = 0
+// thick = 1
 
-// Define an array of barcode-to-Code 39 mappings
-BarcodeMapping barcodeMappings[] = {
-    { "000110100", '0' },
-    { "100100001", '1' },
-    { "001100001", '2' },
-    { "101100000", '3' },
-    { "000110001", '4' },
-    { "100110000", '5' },
-    { "001110000", '6' },
-    { "000100101", '7' },
-    { "100100100", '8' },
-    { "001100100", '9' },
-    { "100001001", 'A' },
-    { "001001001", 'B' },
-    { "101001000", 'C' },
-    { "000011001", 'D' },
-    { "100011000", 'E' },
-    { "001011000", 'F' },
-    { "000001101", 'G' },
-    { "100001100", 'H' },
-    { "001001100", 'I' },
-    { "100000011", 'J' },
-    { "001000011", 'K' },
-    { "101000010", 'L' },
-    { "000010011", 'M' },
-    { "100010010", 'N' },
-    { "001010010", 'O' },
-    { "000000111", 'P' },
-    { "100000110", 'Q' },
-    { "001000110", 'R' },
-    { "000010110", 'S' },
-    { "100010100", 'T' },
-    { "001010100", 'U' },
-    { "100110001", 'V' },
-    { "001110001", 'W' },
-    { "000100111", 'X' },
-    { "100100110", 'Y' },
-    { "001100110", 'Z' },
-    { "010010100", '*' },
-    { "010001001", '-' },
-    { "001001010", '.' },
-    { "010101000", ' ' }
+// Define GPIO pin and ADC channel for the "front" IR sensor
+#define BARCODE_SENSOR_PIN 26
+#define WALL_SENSOR_PIN 22
+#define BARCODE_ADC_CHANNEL 0
+
+#define DEBOUNCE_DELAY_MS 100
+
+#define BARCODE_THRESHOLD 1500
+#define BARCODE_CHAR_LIMIT 2
+
+void initialiseBarcodeReader();
+int  captureInfraredSensorReading();
+void handleSensorInterrupt();
+void startBarcodeReadTask();
+void readScannedBarcode();
+void resetReadingParameters();
+void convertBarcodeToCharacter();
+
+enum BarType
+{
+    BLACK_BAR,
+    WHITE_BAR
 };
 
+struct Flags
+{
+    bool isPrevBlackBar;
+    bool isBarcode;
+    int count;
+    int limitter;
+};
 
-#endif
+static struct Flags barcodeFlags;
+static enum BarType barType;
+static uint64_t last_button_press_time = 0;
+static uint16_t coded_barcode = 0;
+static uint64_t decoded_barcode = 0;
+
+static int black_bar_times[] = {0, 0, 0, 0, 0}; // Array for black bar times
+static int white_bar_times[] = {0, 0, 0, 0, 0};    // Array for white bar times
+static int bar_index = 0;                          // Index for the current bar
+
+static char code_39_characters[] = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *"; // Array of characters for code 39
+
+
+#endif // BARCODE_H
