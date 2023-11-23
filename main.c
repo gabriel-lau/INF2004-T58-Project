@@ -144,7 +144,7 @@ int main( void )
 {
     stdio_init_all();
      void motorSetup();
-     barcode_init(); // to initialize the barcode
+     initialiseBarcodeReader(); // to initialize the barcode
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
 #if ( portSUPPORT_SMP == 1 )

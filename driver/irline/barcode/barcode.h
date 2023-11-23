@@ -20,13 +20,13 @@
 #define BARCODE_THRESHOLD 1500
 #define BARCODE_CHAR_LIMIT 2
 
-void barcode_init();
-int get_ir_reading();
-void check_if_wall();
-void init_read_barcode();
-void read_barcode();
-void reset_barcode_params();
-void barcode_to_char();
+void initialiseBarcodeReader();
+int  captureInfraredSensorReading();
+void handleSensorInterrupt();
+void startBarcodeReadTask();
+void readScannedBarcode();
+void resetReadingParameters();
+void convertBarcodeToCharacter();
 
 enum BarType
 {
