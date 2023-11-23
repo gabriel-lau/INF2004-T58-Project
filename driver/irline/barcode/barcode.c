@@ -11,111 +11,99 @@
 #include "hardware/adc.h"
 #include "hardware/clocks.h"
 
-#include "barcode.h"
-
-volatile bool isBlackBar = false;
-static uint64_t lastBarTime = 0;
-
-BarcodeState currentState = STATE_WAITING_FOR_START;
-static int blackBarCount = 0;
-static int whiteBarCount = 0;
-static int done_black = 0;
-static int done_white = 0;
-
-#define MAX_PULSE_WIDTHS 9                      // Adjust this to your desired array size
-static int pulseWidthCount = 0;                 // Counter for the number of stored pulseWidth values
-static uint64_t pulseWidths[MAX_PULSE_WIDTHS];  // Array to store pulseWidth values
-// int main()
-// {
-//   stdio_init_all();
-//   barcode_init();
-
-//   while(1){
-
-//   }
-// }
-
+// Resets all parameters related to barcode reading to their initial state.
 void resetReadingParameters()
 {
-  barcodeFlags.isPrevBlackBar = false;
-  barcodeFlags.isBarcode = false;
-  barcodeFlags.count = 0;
-  barcodeFlags.limitter = 0;
-  barType = BLACK_BAR;
-  last_button_press_time = 0;
+  // Reset flags and counters
+  barcodeFlags.isPreviousBlackBarDetected = false;
+  barcodeFlags.isBarcodeDetected = false;
+  barcodeFlags.wallDetectionCount = 0;
+  barcodeFlags.readingLimitReached = 0;
+  // Reset bar type and timings
+  currentBarType = BLACK_BAR;
+  timeOfLastDetectedBar = 0;
+  // Reset barcode values and index
   coded_barcode = 0;
   decoded_barcode = 0;
-  bar_index = 0;
-  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt); // enable rising edge interrupt
+  currentBarIndex = 0;
+  // Enable GPIO interrupt for detecting barcodes
+  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
 }
 
-void  initialiseBarcodeReader()
+// Initializes the barcode reader by setting up the ADC and GPIO interrupts.
+void initialiseBarcodeReader()
 {
-  printf("initializing barcode reader\n");
+  printf("Initializing barcode reader\n");
 
-  // ADC Setup
+  // Initialize ADC for reading barcode sensor data
   adc_init();
   adc_gpio_init(BARCODE_SENSOR_PIN);
   adc_select_input(BARCODE_ADC_CHANNEL);
 
+  // Reset reading parameters to initial state
   resetReadingParameters();
 
-  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt); // enable rising edge interrupt
+  // Enable GPIO interrupt for wall sensor
+  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
 }
 
+// Captures a single reading from the infrared sensor.
 int captureInfraredSensorReading() {
   return adc_read();
 }
 
+// Handles the interrupt triggered by the wall sensor detecting a barcode.
 void handleSensorInterrupt()
 {
-  if (time_us_64() - last_button_press_time > DEBOUNCE_DELAY_MS * 1000)
+  // Check for debounce to avoid noise in the signal
+  if (time_us_64() - timeOfLastDetectedBar > DEBOUNCE_DELAY_MS * 1000)
   {
-    barcodeFlags.count++;
-    last_button_press_time = time_us_64(); // update last button press time
+    // Increment wall detection count and update timestamp
+    barcodeFlags.wallDetectionCount++;
+    timeOfLastDetectedBar = time_us_64();
 
-    if (barcodeFlags.count > 1) // When wall is detected
+    if (barcodeFlags.wallDetectionCount > 1) // When a wall (or barcode) is detected more than once
     {
-      // Disable interrupt and set flag
-      gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false, &handleSensorInterrupt); // enable rising edge interrupt
-      barcodeFlags.isBarcode = true;
+      // Disable further interrupts and set barcode detection flag
+      gpio_set_irq_enabled(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false);
+      barcodeFlags.isBarcodeDetected = true;
 
+      // Notify user to reverse the robot and start the barcode reading task
       printf("Barcode Detected please reverse robot\n");
-      // TODO: Tell main to stop motors and reverse
       startBarcodeReadTask();
     }
   }
 }
-
+// Creates a new FreeRTOS task to handle barcode reading.
 void startBarcodeReadTask() {
   xTaskCreate(readScannedBarcode, "BarcodeReadTask", 2048, NULL, 1, NULL);
-} 
-// void init_read_barcode()
-// {
-//   xTaskCreate(read_barcode, "read_barcode", 2048, NULL, 1, NULL);
-// }
+}
 
+
+
+// Decodes the barcode from the black and white bar times.
 void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
 {
-  int dec_black_bar_times[] = {0, 0, 0, 0, 0}; // Array for black bar times
-  int dec_white_bar_times[] = {0, 0, 0, 0, 0}; // Array for white bar times
-  dec_black_bar_times[0] = (white_bar_times[0] - black_bar_times[0]) / 10000;
-  dec_black_bar_times[1] = (white_bar_times[1] - black_bar_times[1]) / 10000;
-  dec_black_bar_times[2] = (white_bar_times[2] - black_bar_times[2]) / 10000;
-  dec_black_bar_times[3] = (white_bar_times[3] - black_bar_times[3]) / 10000;
-  dec_black_bar_times[4] = (white_bar_times[4] - black_bar_times[4]) / 10000;
+  // Arrays to hold normalized bar times
+  int dec_black_bar_times[5];
+  int dec_white_bar_times[4];
 
-  dec_white_bar_times[0] = (black_bar_times[1] - white_bar_times[0]) / 10000;
-  dec_white_bar_times[1] = (black_bar_times[2] - white_bar_times[1]) / 10000;
-  dec_white_bar_times[2] = (black_bar_times[3] - white_bar_times[2]) / 10000;
-  dec_white_bar_times[3] = (black_bar_times[4] - white_bar_times[3]) / 10000;
+  // Normalize the black bar times by subtracting the start of the black bar time from the start of the white bar time
+  for (int i = 0; i < 5; i++)
+  {
+    dec_black_bar_times[i] = (white_bar_times[i] - black_bar_times[i]) / 10000;
+    if (i < 4) // Avoid accessing white_bar_times[4] which does not exist
+    {
+      // Normalize the white bar times similarly
+      dec_white_bar_times[i] = (black_bar_times[i + 1] - white_bar_times[i]) / 10000;
+    }
+  }
 
-  // printf("Black bar times: %d %d %d %d %d\n", dec_black_bar_times[0], dec_black_bar_times[1], dec_black_bar_times[2], dec_black_bar_times[3], dec_black_bar_times[4]);
-  // printf("White bar times: %d %d %d %d\n\n", dec_white_bar_times[0], dec_white_bar_times[1], dec_white_bar_times[2], dec_white_bar_times[3]);
-
+  // Variables to hold the maximum values for normalization
   int max1 = 0;
   int max2 = 0;
 
+  // Find the two largest black bar times
   for (int i = 0; i < 5; i++)
   {
     if (dec_black_bar_times[i] > max1)
@@ -129,20 +117,13 @@ void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
     }
   }
 
-  // Set the two highest to 1, the rest to 0 for black bars
+  // Normalize black bars to binary values (1 or 0)
   for (int i = 0; i < 5; i++)
   {
-    if (dec_black_bar_times[i] == max1 || dec_black_bar_times[i] == max2)
-    {
-      dec_black_bar_times[i] = 1;
-    }
-    else
-    {
-      dec_black_bar_times[i] = 0;
-    }
+    dec_black_bar_times[i] = (dec_black_bar_times[i] == max1 || dec_black_bar_times[i] == max2) ? 1 : 0;
   }
 
-  // Find the highest value in white_bar_times
+  // Find the largest white bar time
   int max_white = dec_white_bar_times[0];
   for (int i = 1; i < 4; i++)
   {
@@ -152,22 +133,20 @@ void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
     }
   }
 
-  // Set the highest to 1, the rest to 0 for white bars
+  // Normalize white bars to binary values (1 or 0)
   for (int i = 0; i < 4; i++)
   {
-    if (dec_white_bar_times[i] == max_white)
-    {
-      dec_white_bar_times[i] = 1;
-    }
-    else
-    {
-      dec_white_bar_times[i] = 0;
-    }
+    dec_white_bar_times[i] = (dec_white_bar_times[i] == max_white) ? 1 : 0;
   }
-  barcodeFlags.limitter++;
-  printf("\nthis is the %d time\n", barcodeFlags.limitter);
+
+  // Increment the number of times barcode reading has occurred
+  barcodeFlags.readingLimitReached++;
+  // Print the normalized bar times for debugging
+  printf("\nthis is the %d time\n", barcodeFlags.readingLimitReached);
   printf("Black bar times: %d %d %d %d %d\n", dec_black_bar_times[0], dec_black_bar_times[1], dec_black_bar_times[2], dec_black_bar_times[3], dec_black_bar_times[4]);
   printf("White bar times: %d %d %d %d\n\n", dec_white_bar_times[0], dec_white_bar_times[1], dec_white_bar_times[2], dec_white_bar_times[3]);
+
+  // Convert the barcode to a character using the normalized times
   convertBarcodeToCharacter(dec_black_bar_times, dec_white_bar_times);
 }
 
@@ -212,38 +191,55 @@ void convertBarcodeToCharacter(int black_bar_times[], int white_bar_times[])
   printf("Decoded character: %c\n", decoded_char);
 }
 
+// Continuously reads the barcode sensor and processes the data to decode barcodes.
 void readScannedBarcode()
 {
+  // Delay to stabilize the sensor readings
   vTaskDelay(pdMS_TO_TICKS(1000));
-  while (barcodeFlags.isBarcode)
-  {
-    uint16_t reading = captureInfraredSensorReading();
 
-    if (reading > BARCODE_THRESHOLD && !barcodeFlags.isPrevBlackBar)
+  // Loop as long as a barcode is detected
+  while (barcodeFlags.isBarcodeDetected)
+  {
+    // Capture the sensor reading
+    uint16_t reading = captureInfraredSensorReading();
+    // Calculate the time since the last bar was detected
+    uint64_t timing = time_us_64() - timeOfLastDetectedBar;
+
+    // Check if a black bar has been detected
+    if (reading > BARCODE_THRESHOLD && !barcodeFlags.isPreviousBlackBarDetected)
     {
-      barcodeFlags.isPrevBlackBar = true;
-      int timing = time_us_64() - last_button_press_time;
-      black_bar_times[bar_index] = timing;
+      // Update flags and timings for the black bar
+      barcodeFlags.isPreviousBlackBarDetected = true;
+      black_bar_times[currentBarIndex] = timing;
     }
-    else if (reading < BARCODE_THRESHOLD && barcodeFlags.isPrevBlackBar)
+    else if (reading < BARCODE_THRESHOLD && barcodeFlags.isPreviousBlackBarDetected)
     {
-      barcodeFlags.isPrevBlackBar = false;
-      int timing = time_us_64() - last_button_press_time;
-      white_bar_times[bar_index] = timing;
-      bar_index++;
+      // Update flags and timings for the white space following the black bar
+      barcodeFlags.isPreviousBlackBarDetected = false;
+      white_bar_times[currentBarIndex] = timing;
+      // Move to the next set of bars
+      currentBarIndex++;
     }
+
+    // Check if we have read the full set of bars for a single character
     if (white_bar_times[4] != 0)
     {
+      // Decode the scanned barcode character
       decodeScannedBarcode(black_bar_times, white_bar_times);
-      barcodeFlags.isPrevBlackBar = false;
+      // Reset the flags and timings for the next character
+      barcodeFlags.isPreviousBlackBarDetected = false;
       white_bar_times[4] = 0;
-      bar_index = 0;
+      currentBarIndex = 0;
     }
-    if (barcodeFlags.limitter > BARCODE_CHAR_LIMIT)
+
+    // If we have reached the limit for reading characters, reset parameters and delete the task
+    if (barcodeFlags.readingLimitReached > BARCODE_CHAR_LIMIT)
     {
       resetReadingParameters();
       vTaskDelete(NULL);
     }
+
+    // Delay a short period before the next read
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
