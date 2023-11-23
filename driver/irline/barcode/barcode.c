@@ -12,6 +12,7 @@
 #include "hardware/clocks.h"
 
 // Resets all parameters related to barcode reading to their initial state.
+// Resets all parameters related to barcode reading to their initial state.
 void resetReadingParameters()
 {
   // Reset flags and counters
@@ -23,10 +24,17 @@ void resetReadingParameters()
   currentBarType = BLACK_BAR;
   timeOfLastDetectedBar = 0;
   // Reset barcode values and index
+  // Reset flags and counters
+  barcodeFlags.isPreviousBlackBarDetected = false;
+  barcodeFlags.isBarcodeDetected = false;
+  barcodeFlags.wallDetectionCount = 0;
+  barcodeFlags.readingLimitReached = 0;
+  // Reset bar type and timings
+  currentBarType = BLACK_BAR;
+  timeOfLastDetectedBar = 0;
+  // Reset barcode values and index
   coded_barcode = 0;
   decoded_barcode = 0;
-  bar_index = 0;
-  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt); // enable rising edge interrupt
   currentBarIndex = 0;
   // Enable GPIO interrupt for detecting barcodes
   gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
@@ -34,9 +42,12 @@ void resetReadingParameters()
 
 // Initializes the barcode reader by setting up the ADC and GPIO interrupts.
 void initialiseBarcodeReader()
+// Initializes the barcode reader by setting up the ADC and GPIO interrupts.
+void initialiseBarcodeReader()
 {
   printf("Initializing barcode reader\n");
 
+  // Initialize ADC for reading barcode sensor data
   // Initialize ADC for reading barcode sensor data
   adc_init();
   adc_gpio_init(BARCODE_SENSOR_PIN);
@@ -50,10 +61,12 @@ void initialiseBarcodeReader()
 }
 
 // Captures a single reading from the infrared sensor.
+// Captures a single reading from the infrared sensor.
 int captureInfraredSensorReading() {
   return adc_read();
 }
 
+// Handles the interrupt triggered by the wall sensor detecting a barcode.
 // Handles the interrupt triggered by the wall sensor detecting a barcode.
 void handleSensorInterrupt()
 {
@@ -63,19 +76,28 @@ void handleSensorInterrupt()
     // Increment wall detection count and update timestamp
     barcodeFlags.wallDetectionCount++;
     timeOfLastDetectedBar = time_us_64();
+    // Increment wall detection count and update timestamp
+    barcodeFlags.wallDetectionCount++;
+    timeOfLastDetectedBar = time_us_64();
 
+    if (barcodeFlags.wallDetectionCount > 1) // When a wall (or barcode) is detected more than once
     if (barcodeFlags.wallDetectionCount > 1) // When a wall (or barcode) is detected more than once
     {
       // Disable further interrupts and set barcode detection flag
       gpio_set_irq_enabled(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false);
       barcodeFlags.isBarcodeDetected = true;
+      // Disable further interrupts and set barcode detection flag
+      gpio_set_irq_enabled(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false);
+      barcodeFlags.isBarcodeDetected = true;
 
+      // Notify user to reverse the robot and start the barcode reading task
       // Notify user to reverse the robot and start the barcode reading task
       printf("Barcode Detected please reverse robot\n");
       startBarcodeReadTask();
     }
   }
 }
+// Creates a new FreeRTOS task to handle barcode reading.
 // Creates a new FreeRTOS task to handle barcode reading.
 void startBarcodeReadTask() {
   xTaskCreate(readScannedBarcode, "BarcodeReadTask", 2048, NULL, 1, NULL);
