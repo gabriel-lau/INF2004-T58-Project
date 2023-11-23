@@ -32,6 +32,8 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 /*
 100% DUTY CYCLE = 62500
 50% DUTY CYCLE = 31250
+40% DUTY CYCLE = 25000
+30% DUTY CYCLE = 18750
 25% DUTY CYCLE = 15625
 20% DUTY CYCLE = 12500
 15% DUTY CYCLE = 9375
@@ -40,8 +42,8 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 float desiredSpeed = 15;
 double leftSpeed = 0;
 double rightSpeed = 0;
-double leftDutyCycle = 15625; 
-double rightDutyCycle = 15625;
+double leftDutyCycle = 18750; 
+double rightDutyCycle = 22000;
 
 // PID constants
 // PID gains 
@@ -192,6 +194,32 @@ void turnRight()
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
     gpio_put(INPUT_2_RIGHT, 1);
+}
+
+void turn90Right()
+{
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
+    gpio_put(INPUT_1_LEFT, 1);
+    gpio_put(INPUT_2_LEFT, 0);
+    gpio_put(INPUT_1_RIGHT, 0);
+    gpio_put(INPUT_2_RIGHT, 1);
+    sleep_ms(3000);
+    stop();
+}
+
+void turn90Left()
+{
+    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
+    setSpeed();
+    gpio_put(INPUT_1_LEFT, 0);
+    gpio_put(INPUT_2_LEFT, 1);
+    gpio_put(INPUT_1_RIGHT, 1);
+    gpio_put(INPUT_2_RIGHT, 0);
+    sleep_ms(3000);
+    stop();
 }
 
 void stop()

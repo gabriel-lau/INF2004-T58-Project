@@ -66,17 +66,12 @@ void setDir(int distance) // change direction if meet obstacle
     printf("Distance: %d cm\n", distance);
     if (distance <= 15)
     {
-        stop();
-        sleep_ms(1000);
-        moveBackward();
         //printf("%d",distance);
         //printf("Stop\n");
         xQueueSend(xControlQueue, "s", portMAX_DELAY);
     }
     else 
     {
-        sleep_ms(1000);
-        moveForward();
         printf("Forward\n");
         xQueueSend(xControlQueue, "f", portMAX_DELAY);
     }
@@ -92,8 +87,10 @@ void motorTask(void *pvParameters)
     motorSetup();
     char xReceivedChar;
     size_t xReceivedBytes;
-    while (1)
+    double currTime = time_us_32();
+        while (1)
     {   
+        
         xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY);
         printf("Received %c\n", xReceivedChar);
         if  (xReceivedChar == 'f')
@@ -103,22 +100,34 @@ void motorTask(void *pvParameters)
         else if (xReceivedChar == 's')
         {
             moveBackward();
+            sleep_ms(500);
+            stop();
+            sleep_ms(500);
         }        
+        
         if(irLine(IR_PIN_LEFT) == 1){
+            stop();
+            sleep_ms(1000);
             turnRight();
+            sleep_ms(300);
             printf("Turn Right\n");
         }
         printf("RIGHT IS HERE\n");
         irLine(IR_PIN_RIGHT);
         if(irLine(IR_PIN_RIGHT) == 1){
+            stop();
+            sleep_ms(1000);
             turnLeft();
+            sleep_ms(300);
             printf("Turn Left\n");
         }
-        printf("\n");
         //printf("FROM HERE ON IS MAGNO\n");
         magnoSetup();
+        printf("\n");
         //printf("New Heading: %d\n",getHeading());
-        vTaskDelay(500);
+        // vTaskDelay(500);
+
+        
     }
 }
 
@@ -129,7 +138,7 @@ void ultrasonicTask(void *pvParameters)
     {
         ultraSetup();
         setDir(getCm(TRIG_PIN, ECHO_PIN));
-        vTaskDelay(500);
+        vTaskDelay(200);
     }
 }
 

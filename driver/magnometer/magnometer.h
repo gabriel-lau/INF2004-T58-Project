@@ -87,7 +87,7 @@ int magnoSetup()
         float heading = get_heading(x_mag, y_mag);
         printf("Heading: %.2f degrees\n", heading);
         newHeading = heading;
-        sleep_ms(100);
+        // sleep_ms(100);
     
 
     return 0;

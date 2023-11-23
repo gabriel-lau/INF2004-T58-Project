@@ -57,5 +57,4 @@ void setupUltrasonicPins()
 void ultraSetup() {
         setupUltrasonicPins(TRIG_PIN, ECHO_PIN);
         getCm(TRIG_PIN, ECHO_PIN);
-        sleep_ms(1000);
 }
