@@ -1,8 +1,10 @@
 #include "lwip/apps/httpd.h"
 #include "pico/cyw43_arch.h"
 
+#include "wifi.h"
+
 // CGI handler which is run when a request for /car.cgi is detected
-const char * cgi_car_handler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
+const char *cgi_start_handler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[])
 {
     // Check if a request for car has been made (/car.cgi?time=x&mode=y)
     int modeFound = 0; // Flag to check if 'mode' parameter is found
@@ -15,8 +17,10 @@ const char * cgi_car_handler(int iIndex, int iNumParams, char *pcParam[], char *
             // Look at the 'mode' argument to perform mode-specific actions
             if (strcmp(pcValue[i], "map") == 0) {
                 printf("scanning map\n");
+                testCase1();
             } else if(strcmp(pcValue[i], "shortest") == 0) {
                 printf("getting shortest path\n");
+                testCase2();
             }
             modeFound = 1;
         } else if (strcmp(pcParam[i] , "time") == 0){
@@ -42,10 +46,8 @@ const char * cgi_car_handler(int iIndex, int iNumParams, char *pcParam[], char *
 // tCGI Struct
 // Fill this with all of the CGI requests and their respective handlers
 static const tCGI cgi_handlers[] = {
-    {
-        // Html request for "/car.cgi" triggers cgi_handler
-        "/car.cgi", cgi_car_handler
-    },
+    {// Html request for "/start.cgi" triggers cgi_handler
+     "/start.cgi", cgi_start_handler},
 };
 
 void cgi_init(void)
