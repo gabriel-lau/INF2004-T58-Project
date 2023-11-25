@@ -1,8 +1,6 @@
 #ifndef BARCODE_H
 #define BARCODE_H
 
-
-
 // every barcode char is 9 bars
 // start w black end with black
 // 5 black bar (+0-9)

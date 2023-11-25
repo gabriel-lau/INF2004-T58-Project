@@ -3,9 +3,6 @@
 #include "pico/stdlib.h"
 #include "pico/time.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "hardware/adc.h"
@@ -104,6 +101,36 @@ void startBarcodeReadTask() {
 }
 
 
+char decode_barcode(int black_bar_times[], int white_bar_times[])
+{
+  int dec_black_bar_times[] = {0, 0, 0, 0, 0}; // Array for black bar times
+  int dec_white_bar_times[] = {0, 0, 0, 0, 0}; // Array for white bar times
+  dec_black_bar_times[0] = (white_bar_times[0] - black_bar_times[0]) / 10000;
+  dec_black_bar_times[1] = (white_bar_times[1] - black_bar_times[1]) / 10000;
+  dec_black_bar_times[2] = (white_bar_times[2] - black_bar_times[2]) / 10000;
+  dec_black_bar_times[3] = (white_bar_times[3] - black_bar_times[3]) / 10000;
+  dec_black_bar_times[4] = (white_bar_times[4] - black_bar_times[4]) / 10000;
+
+  dec_white_bar_times[0] = (black_bar_times[1] - white_bar_times[0]) / 10000;
+  dec_white_bar_times[1] = (black_bar_times[2] - white_bar_times[1]) / 10000;
+  dec_white_bar_times[2] = (black_bar_times[3] - white_bar_times[2]) / 10000;
+  dec_white_bar_times[3] = (black_bar_times[4] - white_bar_times[3]) / 10000;
+
+  int max1 = 0;
+  int max2 = 0;
+
+  for (int i = 0; i < 5; i++)
+  {
+    if (dec_black_bar_times[i] > max1)
+    {
+      max2 = max1;
+      max1 = dec_black_bar_times[i];
+    }
+    else if (dec_black_bar_times[i] > max2)
+    {
+      max2 = dec_black_bar_times[i];
+    }
+  }
 
 // Decodes the barcode from the black and white bar times.
 void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
@@ -177,7 +204,6 @@ void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
 void convertBarcodeToCharacter(int black_bar_times[], int white_bar_times[])
 {
   printf("Decoding barcode");
-
   int result = 0;
 
   if (black_bar_times[0] && black_bar_times[4])
