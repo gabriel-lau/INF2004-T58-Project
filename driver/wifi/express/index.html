@@ -1,0 +1,59 @@
+<!-- https://github.com/krzmaz/pico-w-webserver-example
+https://github.com/LearnEmbeddedSystems/pico-w-webserver-template
+https://www.youtube.com/watch?v=C_O0MXGBHsw
+https://github.com/maxnet/pico-webserver -->
+<!-- User Interface: Create a user interface that allows users to initiate the robot,
+adjust parameters, visualize the car's performance, and monitor PID controller
+behavior. -->
+<!-- Configuration for GUI
+When to start, a start button, choose want to map the map, choose the shortest path
+Receive map, sensor data, etc
+The map needs to show obstacle is detected and then will need to reflect on the GUI
+ -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>api</title>
+
+    <style></style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <!-- <p id="message"></p> -->
+      <a href="/api/received-data">/api/received-data</a>
+    </div>
+
+    <script>
+      // const socket = new WebSocket("ws://192.168.58.141:4242");
+      // const msg = document.getElementById("message");
+
+      // socket.onopen = () => {
+      //   console.log("Connected to the WebSocket server");
+
+      //   // Send data to the server
+      //   //   socket.send('hello');
+      // };
+
+      // socket.onmessage = (event) => {
+      //   const message = event.data;
+      //   msg.innerText = message;
+      //   console.log("Received message from server:", message);
+      //   socket.send("hello");
+      // };
+
+      // socket.onclose = (event) => {
+      //   if (event.wasClean) {
+      //     console.log("Connection closed cleanly");
+      //   } else {
+      //     console.error("Connection abruptly closed");
+      //   }
+      // };
+
+      // socket.onerror = (error) => {
+      //   console.error("WebSocket error:", error);
+      // };
+    </script>
+  </body>
+</html>

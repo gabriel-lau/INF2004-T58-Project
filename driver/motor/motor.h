@@ -32,60 +32,33 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 /*
 100% DUTY CYCLE = 62500
 50% DUTY CYCLE = 31250
-40% DUTY CYCLE = 25000
-30% DUTY CYCLE = 18750
 25% DUTY CYCLE = 15625
 20% DUTY CYCLE = 12500
 15% DUTY CYCLE = 9375
 10% DUTY CYCLE = 6250
 */
-float desiredSpeed = 15;
+float desiredSpeed = 30;
 double leftSpeed = 0;
 double rightSpeed = 0;
-double leftDutyCycle = 18750; 
-double rightDutyCycle = 22000;
+double leftDutyCycle = 31250; 
+double rightDutyCycle = 31250;
 
 // PID constants
 // PID gains 
-float Kp = 1.0; 
-float Ki = 0.1; 
-float Kd = 0.01; 
+float Kp = 2.0; 
+float Ki = 0.2; 
+float Kd = 0.02; 
 
-float leftPrevError = 0;
-float leftIntegral = 0;
-float rightPrevError = 0;
-float rightIntegral = 0;
-
-void motorSetup() 
-{
-    //Init Left GPIO
-    gpio_init(INPUT_1_LEFT);
-    gpio_init(INPUT_2_LEFT);
-    gpio_init(PWM_LEFT);
-
-    //Init Right GPIO
-    gpio_init(INPUT_1_RIGHT);
-    gpio_init(INPUT_2_RIGHT);
-    gpio_init(PWM_RIGHT);
-
-    //Set Left GPIO to out power board
-    gpio_set_dir(INPUT_1_LEFT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_LEFT, GPIO_OUT);
-    gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
-
-    //Set Right GPIO to out power board
-    gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
-    gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
-}
+float prevError = 0;
+float integral = 0; 
 
 // Function to compute the control signal
 float controlLoop(float setpoint, float current_value, float *integral, float *prev_error) {
-    float error =  setpoint - current_value;
+    float error = current_value - setpoint;
     *integral += error;
     float derivative = error - *prev_error;
-    float control_signal = Kp * error + Ki * (*integral) + Kd * derivative;
-    *prev_error = error;
+    float control_signal = Kp * error + Ki * (*integral) + Kd * derivative * 0.1;
+    *prev_error = current_value;
     return control_signal;
 }
 
@@ -110,10 +83,8 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - leftLastTime;
             double leftSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            // printf("L speed: %f\n", leftSpeed);
-            // float diff = controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError) * 10;
-            // printf("L diff: %f\n", diff);
-            // leftDutyCycle += diff;
+            printf("Left speed: %f\n", leftSpeed);
+            controlLoop(30, leftSpeed, &integral, &prevError);
             leftLastTime = currTime;
         }
         else if (gpio == ENCODER_RIGHT)
@@ -121,10 +92,8 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - rightLastTime;
             double rightSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            // printf("R speed: %f\n", rightSpeed);
-            // float diff = controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError) * 10;
-            // printf("R diff: %f\n", diff);
-            // rightDutyCycle += diff;
+            printf("Right speed: %f\n", rightSpeed);
+            controlLoop(30, rightSpeed, &integral, &prevError);
             rightLastTime = currTime;
         }
     }
@@ -165,9 +134,8 @@ void moveForward()
 
 void moveBackward()
 {
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 1);
     gpio_put(INPUT_1_RIGHT, 0);
@@ -176,9 +144,8 @@ void moveBackward()
 
 void turnLeft()
 {
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 1);
     gpio_put(INPUT_1_RIGHT, 1);
@@ -187,46 +154,18 @@ void turnLeft()
 
 void turnRight()
 {
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 1);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
     gpio_put(INPUT_2_RIGHT, 1);
-}
-
-void turn90Right()
-{
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
-    gpio_put(INPUT_1_LEFT, 1);
-    gpio_put(INPUT_2_LEFT, 0);
-    gpio_put(INPUT_1_RIGHT, 0);
-    gpio_put(INPUT_2_RIGHT, 1);
-    sleep_ms(3000);
-    stop();
-}
-
-void turn90Left()
-{
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    // pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
-    gpio_put(INPUT_1_LEFT, 0);
-    gpio_put(INPUT_2_LEFT, 1);
-    gpio_put(INPUT_1_RIGHT, 1);
-    gpio_put(INPUT_2_RIGHT, 0);
-    sleep_ms(3000);
-    stop();
 }
 
 void stop()
 {
-    // pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    //pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-    setSpeed();
+    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
+    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
     gpio_put(INPUT_1_LEFT, 0);
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
