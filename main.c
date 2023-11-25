@@ -116,78 +116,45 @@ void motorTask(void *pvParameters)
     }
 }
 
-// // Read temperature from ADC
-// float read_onboard_temperature()
-// {
-//     /* 12-bit conversion, assume max value == ADC_VREF == 3.3 V */
-//     const float conversionFactor = 3.3f / (1 << 12);
-
-//     float adc = (float)adc_read() * conversionFactor;
-//     float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
-
-//     return tempC;
-// }
-
-// void tempTask(void *pvParameters)
-// {
-//     float temperature = 0.0;
-
-//     // Setup temp sensor adc
-//     adc_init();
-//     adc_set_temp_sensor_enabled(true);
-//     adc_select_input(4);
-
-//     while (true)
-//     {
-//         vTaskDelay(1000); // Wait 1s
-//         temperature = read_onboard_temperature();
-
-//         // Convert float to JSON string
-//         char temperatureBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
-//         snprintf(temperatureBuffer, sizeof(temperatureBuffer), "{\"temp\": %f}", temperature);
-
-//         // Send JSON data to wifiTask
-//         xMessageBufferSend(
-//             xBarcodeMessageBuffer,            /* The message buffer to write to. */
-//             (void *)temperatureBuffer,     /* The source of the data to send. */
-//             strlen(temperatureBuffer) + 1, /* Include null-terminator in length */
-//             0);                            /* Do not block, should the buffer be full. */
-//     }
-// };
-
 void barcodeTask(void *pvParameters)
 {
-    printf("initializing barcode\n");
-    // Initialize the ADC
+    printf("Initializing barcode reader\n");
+
+    // Initialize ADC for reading barcode sensor data
     adc_init();
     adc_gpio_init(BARCODE_SENSOR_PIN);
     adc_select_input(BARCODE_ADC_CHANNEL);
+    
+    // Reset reading parameters to initial state
+    resetReadingParameters();
 
-    reset_barcode_params();
+    // Enable GPIO interrupt for wall sensor
+    gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
 
-    gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &check_if_wall); // enable rising edge interrupt
-    // vTaskDelay(pdMS_TO_TICKS(1000));
     while (true)
     {
-        char barcode_char = init_read_barcode();
-
-        // printf("%c", barcode_char);
-
-        if (barcode_char != '\0')
+        if (decoded_complete)
         {
-            // Convert float to JSON string
-            char barcodeBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
-            snprintf(barcodeBuffer, sizeof(barcodeBuffer), "{\"temp\": \"%c\"}", barcode_char);
+            if (decoded_char != '\0')
+            {
+                printf("Barcode complete: %i\n", decoded_complete);
+                printf("Barcode char: %c\n\n", decoded_char);
 
-            // Send JSON data to wifiTask
-            xMessageBufferSend(
-                xBarcodeMessageBuffer,     /* The message buffer to write to. */
-                (void *)barcodeBuffer,     /* The source of the data to send. */
-                strlen(barcodeBuffer) + 1, /* Include null-terminator in length */
-                0);                        /* Do not block, should the buffer be full. */
+                decoded_complete = false;
+                // Convert float to JSON string
+                char barcodeBuffer[mbaTASK_MESSAGE_BUFFER_SIZE]; // Adjust the size based on your needs
+                snprintf(barcodeBuffer, sizeof(barcodeBuffer), "{\"barcode\": \"%c\"}", decoded_char);
+
+                // Send JSON data to wifiTask
+                xMessageBufferSend(
+                    xBarcodeMessageBuffer,     /* The message buffer to write to. */
+                    (void *)barcodeBuffer,     /* The source of the data to send. */
+                    strlen(barcodeBuffer) + 1, /* Include null-terminator in length */
+                    0);                        /* Do not block, should the buffer be full. */
+            }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
-    }
+        }
 };
 
 void wifiTask(void *pvParameters)
@@ -231,7 +198,7 @@ void wifiTask(void *pvParameters)
         // work you might be doing.
         sleep_ms(1000);
 #endif
-        vTaskDelay(5000);
+        vTaskDelay(1000);
 
         // Read data from the message buffer
         size_t bytesRead = xMessageBufferReceive(xBarcodeMessageBuffer, receivedData, sizeof(receivedData) - 1, portMAX_DELAY);
@@ -259,11 +226,10 @@ void vLaunch(void)
 {
     initialize_mutex();
 
-    xTaskCreate(motorTask, "TestTempThread", configMINIMAL_STACK_SIZE, NULL, 1, &motorTaskHandle);
+    // Motor Task handle
+    xTaskCreate(motorTask, "MotorTask", configMINIMAL_STACK_SIZE, NULL, 1, &motorTaskHandle);
 
-    // TaskHandle_t tempTaskHandle;
-    // xTaskCreate(tempTask, "TempThread", configMINIMAL_STACK_SIZE, NULL, 1, &tempTaskHandle);
-
+    // Wifi Task handle
     xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 1, &wifiTaskHandle);
 
     // Barcode Task handle
