@@ -124,7 +124,7 @@ void barcodeTask(void *pvParameters)
     adc_init();
     adc_gpio_init(BARCODE_SENSOR_PIN);
     adc_select_input(BARCODE_ADC_CHANNEL);
-    
+
     // Reset reading parameters to initial state
     resetReadingParameters();
 
@@ -154,7 +154,7 @@ void barcodeTask(void *pvParameters)
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10));
-        }
+    }
 };
 
 void wifiTask(void *pvParameters)
@@ -211,7 +211,7 @@ void wifiTask(void *pvParameters)
 
             // Print the received data
             printf("Received message buffer. Received data: %s\n", receivedData);
-            
+
             // Send data to the TCP server
             send_message(receivedData);
         }
