@@ -24,6 +24,7 @@ void handleSensorInterrupt();
 void startBarcodeReadTask();
 void readScannedBarcode();
 void resetReadingParameters();
+void resetCheckParameters();
 void convertBarcodeToCharacter();
 
 enum currentBarType

@@ -127,6 +127,7 @@ void barcodeTask(void *pvParameters)
 
     // Reset reading parameters to initial state
     resetReadingParameters();
+    resetCheckParameters();
 
     // Enable GPIO interrupt for wall sensor
     gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
@@ -152,6 +153,7 @@ void barcodeTask(void *pvParameters)
                     strlen(barcodeBuffer) + 1, /* Include null-terminator in length */
                     0);                        /* Do not block, should the buffer be full. */
             }
+            resetCheckParameters();
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }

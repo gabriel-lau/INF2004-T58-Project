@@ -33,11 +33,13 @@ void resetReadingParameters()
   coded_barcode = 0;
   decoded_barcode = 0;
   currentBarIndex = 0;
-  // Barcode value for main task
-  decoded_complete = false;
-  decoded_char = '\0';
   // Enable GPIO interrupt for detecting barcodes
   gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
+}
+
+void resetCheckParameters(){
+  decoded_complete = false;
+  decoded_char = '\0';
 }
 
 // Captures a single reading from the infrared sensor.
