@@ -61,8 +61,8 @@ uint16_t PWM_LEFT_CYCLE = 32768;
 uint16_t PWM_RIGHT_CYCLE = 32768;
 
 // GPIO pins for ENCODER
-const int ENCODER_LEFT = 15;
-const int ENCODER_RIGHT = 16;
+int ENCODER_LEFT = 15;
+int ENCODER_RIGHT = 16;
 
 // GPIO pins for MAGNOMETER
 const int MAG_SDA = 0;
@@ -100,7 +100,6 @@ void motorTask(void *pvParameters)
     gpio_init(IR_PIN_RIGHT);
     gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
 
-    motorSetup();
     char xReceivedChar;
     size_t xReceivedBytes;
     double currTime = time_us_32();
@@ -152,8 +151,8 @@ void ultrasonicTask(void *pvParameters)
     
     while (1)
     {
-        ultraSetup();
-        setDir(getCm(TRIG_PIN, ECHO_PIN));
+        setupUltrasonicPins();
+        setDir(getCm());
         vTaskDelay(200);
     }
 }
