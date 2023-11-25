@@ -3,12 +3,21 @@
 #include "pico/stdlib.h"
 #include "pico/time.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "hardware/adc.h"
 #include "hardware/clocks.h"
 
-// Resets all parameters related to barcode reading to their initial state.
+#include "barcode.h"
+
+TaskHandle_t readBarcodeTaskHandle;
+
+// In barcode.c
+bool decoded_complete = false;
+char decoded_char = '\0';
+
 // Resets all parameters related to barcode reading to their initial state.
 void resetReadingParameters()
 {
@@ -21,49 +30,22 @@ void resetReadingParameters()
   currentBarType = BLACK_BAR;
   timeOfLastDetectedBar = 0;
   // Reset barcode values and index
-  // Reset flags and counters
-  barcodeFlags.isPreviousBlackBarDetected = false;
-  barcodeFlags.isBarcodeDetected = false;
-  barcodeFlags.wallDetectionCount = 0;
-  barcodeFlags.readingLimitReached = 0;
-  // Reset bar type and timings
-  currentBarType = BLACK_BAR;
-  timeOfLastDetectedBar = 0;
-  // Reset barcode values and index
   coded_barcode = 0;
   decoded_barcode = 0;
   currentBarIndex = 0;
+  // Barcode value for main task
+  decoded_complete = false;
+  decoded_char = '\0';
   // Enable GPIO interrupt for detecting barcodes
   gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
 }
 
-// Initializes the barcode reader by setting up the ADC and GPIO interrupts.
-void initialiseBarcodeReader()
-// Initializes the barcode reader by setting up the ADC and GPIO interrupts.
-void initialiseBarcodeReader()
+// Captures a single reading from the infrared sensor.
+int captureInfraredSensorReading()
 {
-  printf("Initializing barcode reader\n");
-
-  // Initialize ADC for reading barcode sensor data
-  // Initialize ADC for reading barcode sensor data
-  adc_init();
-  adc_gpio_init(BARCODE_SENSOR_PIN);
-  adc_select_input(BARCODE_ADC_CHANNEL);
-
-  // Reset reading parameters to initial state
-  resetReadingParameters();
-
-  // Enable GPIO interrupt for wall sensor
-  gpio_set_irq_enabled_with_callback(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, true, &handleSensorInterrupt);
-}
-
-// Captures a single reading from the infrared sensor.
-// Captures a single reading from the infrared sensor.
-int captureInfraredSensorReading() {
   return adc_read();
 }
 
-// Handles the interrupt triggered by the wall sensor detecting a barcode.
 // Handles the interrupt triggered by the wall sensor detecting a barcode.
 void handleSensorInterrupt()
 {
@@ -73,64 +55,25 @@ void handleSensorInterrupt()
     // Increment wall detection count and update timestamp
     barcodeFlags.wallDetectionCount++;
     timeOfLastDetectedBar = time_us_64();
-    // Increment wall detection count and update timestamp
-    barcodeFlags.wallDetectionCount++;
-    timeOfLastDetectedBar = time_us_64();
 
-    if (barcodeFlags.wallDetectionCount > 1) // When a wall (or barcode) is detected more than once
     if (barcodeFlags.wallDetectionCount > 1) // When a wall (or barcode) is detected more than once
     {
       // Disable further interrupts and set barcode detection flag
       gpio_set_irq_enabled(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false);
       barcodeFlags.isBarcodeDetected = true;
-      // Disable further interrupts and set barcode detection flag
-      gpio_set_irq_enabled(WALL_SENSOR_PIN, GPIO_IRQ_EDGE_RISE, false);
-      barcodeFlags.isBarcodeDetected = true;
 
-      // Notify user to reverse the robot and start the barcode reading task
       // Notify user to reverse the robot and start the barcode reading task
       printf("Barcode Detected please reverse robot\n");
       startBarcodeReadTask();
     }
   }
 }
-// Creates a new FreeRTOS task to handle barcode reading.
-// Creates a new FreeRTOS task to handle barcode reading.
-void startBarcodeReadTask() {
-  xTaskCreate(readScannedBarcode, "BarcodeReadTask", 2048, NULL, 1, NULL);
-}
 
-
-char decode_barcode(int black_bar_times[], int white_bar_times[])
+// Creates a new FreeRTOS task to handle barcode reading.
+void startBarcodeReadTask()
 {
-  int dec_black_bar_times[] = {0, 0, 0, 0, 0}; // Array for black bar times
-  int dec_white_bar_times[] = {0, 0, 0, 0, 0}; // Array for white bar times
-  dec_black_bar_times[0] = (white_bar_times[0] - black_bar_times[0]) / 10000;
-  dec_black_bar_times[1] = (white_bar_times[1] - black_bar_times[1]) / 10000;
-  dec_black_bar_times[2] = (white_bar_times[2] - black_bar_times[2]) / 10000;
-  dec_black_bar_times[3] = (white_bar_times[3] - black_bar_times[3]) / 10000;
-  dec_black_bar_times[4] = (white_bar_times[4] - black_bar_times[4]) / 10000;
-
-  dec_white_bar_times[0] = (black_bar_times[1] - white_bar_times[0]) / 10000;
-  dec_white_bar_times[1] = (black_bar_times[2] - white_bar_times[1]) / 10000;
-  dec_white_bar_times[2] = (black_bar_times[3] - white_bar_times[2]) / 10000;
-  dec_white_bar_times[3] = (black_bar_times[4] - white_bar_times[3]) / 10000;
-
-  int max1 = 0;
-  int max2 = 0;
-
-  for (int i = 0; i < 5; i++)
-  {
-    if (dec_black_bar_times[i] > max1)
-    {
-      max2 = max1;
-      max1 = dec_black_bar_times[i];
-    }
-    else if (dec_black_bar_times[i] > max2)
-    {
-      max2 = dec_black_bar_times[i];
-    }
-  }
+  xTaskCreate(readScannedBarcode, "BarcodeReadTask", configMINIMAL_STACK_SIZE, NULL, 1, &readBarcodeTaskHandle);
+}
 
 // Decodes the barcode from the black and white bar times.
 void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
@@ -204,6 +147,7 @@ void decodeScannedBarcode(int black_bar_times[], int white_bar_times[])
 void convertBarcodeToCharacter(int black_bar_times[], int white_bar_times[])
 {
   printf("Decoding barcode");
+
   int result = 0;
 
   if (black_bar_times[0] && black_bar_times[4])
@@ -237,8 +181,9 @@ void convertBarcodeToCharacter(int black_bar_times[], int white_bar_times[])
     result += 29;
 
   printf("Result: %d\n", result);
-  char decoded_char = code_39_characters[result];
-  printf("Decoded character: %c\n", decoded_char);
+  decoded_char = code_39_characters[result];
+  decoded_complete = true;
+  printf("Decoded character: %c\n\n", decoded_char);
 }
 
 // Continuously reads the barcode sensor and processes the data to decode barcodes.
@@ -286,7 +231,7 @@ void readScannedBarcode()
     if (barcodeFlags.readingLimitReached > BARCODE_CHAR_LIMIT)
     {
       resetReadingParameters();
-      vTaskDelete(NULL);
+      vTaskDelete(readBarcodeTaskHandle);
     }
 
     // Delay a short period before the next read
