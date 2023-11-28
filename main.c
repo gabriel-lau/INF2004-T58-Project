@@ -86,11 +86,13 @@ void motorTask(void *pvParameters)
 
     motorSetup();
     char xReceivedChar;
-    size_t xReceivedBytes;
-    double currTime = time_us_32();
-        while (1)
+    // size_t xReceivedBytes;
+    // double currTime = time_us_32();
+
+    // * MOVE FORWARD
+    while (1)
     {   
-        
+        /*
         xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY);
         printf("Received %c\n", xReceivedChar);
         if  (xReceivedChar == 'f')
@@ -103,8 +105,8 @@ void motorTask(void *pvParameters)
             sleep_ms(500);
             stop();
             sleep_ms(500);
-        }        
-        
+        }*/  
+        moveForward();
         if(irLine(IR_PIN_LEFT) == 1){
             stop();
             sleep_ms(1000);
@@ -122,13 +124,33 @@ void motorTask(void *pvParameters)
             printf("Turn Left\n");
         }
         //printf("FROM HERE ON IS MAGNO\n");
-        magnoSetup();
-        printf("\n");
+        // magnoSetup();
+        // printf("\n");
         //printf("New Heading: %d\n",getHeading());
         // vTaskDelay(500);
-
-        
     }
+
+    // * 90 DEGREE TURN
+    char path[3] = {'l', 'r', 'l'};
+    while (1)
+    {
+        moveForward();
+        if(irLine(IR_PIN_LEFT) == 1 || irLine(IR_PIN_RIGHT) == 1){
+            stop();
+            sleep_ms(1000);
+            if (path[0] == 'l')
+            {
+                turn90Left();
+                printf("Turn Left\n");
+            }
+            else if (path[0] == 'r')
+            {
+                turn90Right();
+                printf("Turn Right\n");
+            }
+        }
+    }
+    
 }
 
 void ultrasonicTask(void *pvParameters)
