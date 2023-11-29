@@ -90,22 +90,23 @@ void motorTask(void *pvParameters)
     // double currTime = time_us_32();
 
     // * MOVE FORWARD
+    
     while (1)
     {   
-        /*
-        xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY);
-        printf("Received %c\n", xReceivedChar);
-        if  (xReceivedChar == 'f')
-        {
-            moveForward();
-        }
-        else if (xReceivedChar == 's')
-        {
-            moveBackward();
-            sleep_ms(500);
-            stop();
-            sleep_ms(500);
-        }*/  
+        
+        // xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY);
+        // printf("Received %c\n", xReceivedChar);
+        // if  (xReceivedChar == 'f')
+        // {
+        //     moveForward();
+        // }
+        // else if (xReceivedChar == 's')
+        // {
+        //     moveBackward();
+        //     sleep_ms(500);
+        //     stop();
+        //     sleep_ms(500);
+        // }
         moveForward();
         if(irLine(IR_PIN_LEFT) == 1){
             stop();
@@ -115,7 +116,7 @@ void motorTask(void *pvParameters)
             printf("Turn Right\n");
         }
         printf("RIGHT IS HERE\n");
-        irLine(IR_PIN_RIGHT);
+        // irLine(IR_PIN_RIGHT);
         if(irLine(IR_PIN_RIGHT) == 1){
             stop();
             sleep_ms(1000);
@@ -131,26 +132,45 @@ void motorTask(void *pvParameters)
     }
 
     // * 90 DEGREE TURN
-    char path[3] = {'l', 'r', 'l'};
+    /*
+    char path[3] = {'r', 'l'};
+    int i = 0;
     while (1)
     {
         moveForward();
         if(irLine(IR_PIN_LEFT) == 1 || irLine(IR_PIN_RIGHT) == 1){
             stop();
             sleep_ms(1000);
-            if (path[0] == 'l')
+            if (i >= sizeof(path))
             {
-                turn90Left();
-                printf("Turn Left\n");
+                
             }
-            else if (path[0] == 'r')
+            else
             {
-                turn90Right();
-                printf("Turn Right\n");
+                if (path[i] == 'l')
+                {
+                    moveForward();
+                    sleep_ms(500);
+                    turn90Left();
+                    stop();
+                    sleep_ms(200);
+                    printf("Turn Left\n");
+                    i++;
+                }
+                else if (path[i] == 'r')
+                {
+                    moveForward();
+                    sleep_ms(500);
+                    turn90Right();
+                    stop();
+                    sleep_ms(200);
+                    printf("Turn Right\n");
+                    i++;
+                }
             }
         }
     }
-    
+    */
 }
 
 void ultrasonicTask(void *pvParameters)

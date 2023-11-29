@@ -34,8 +34,16 @@ const double DISTANCE_PER_PULSE = WHEEL_CIRCUMFERENCE / PULSES_PER_REVOLUTION;
 50% DUTY CYCLE = 31250
 45% DUTY CYCLE = 28125
 40% DUTY CYCLE = 25000
+35% DUTY CYCLE = 21875
 30% DUTY CYCLE = 18750
+29% DUTY CYCLE = 18125
+28% DUTY CYCLE = 17500
+27% DUTY CYCLE = 16875
+26% DUTY CYCLE = 16250
 25% DUTY CYCLE = 15625
+23% DUTY CYCLE = 14375
+22% DUTY CYCLE = 13750
+21% DUTY CYCLE = 13125
 20% DUTY CYCLE = 12500
 15% DUTY CYCLE = 9375
 10% DUTY CYCLE = 6250
@@ -44,8 +52,9 @@ float desiredSpeed = 15;
 double leftSpeed = 0;
 double rightSpeed = 0;
 double leftDutyCycle = 18750; 
-double rightDutyCycle = 28125;
-int ninetyDegreeTime = 3000;
+double rightDutyCycle = 18125; 
+int leftAngleTime = 2000;
+int rightAngleTime = 2300;
 
 // PID constants
 // PID gains 
@@ -112,7 +121,7 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - leftLastTime;
             double leftSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            // printf("L speed: %f\n", leftSpeed);
+            printf("L speed: %f\n", leftSpeed);
             // float diff = controlLoop(desiredSpeed, leftSpeed, &leftIntegral, &leftPrevError) * 10;
             // printf("L diff: %f\n", diff);
             // leftDutyCycle += diff;
@@ -123,7 +132,7 @@ void gpio_encoder_changed_callback(uint gpio, uint32_t events) {
             double currTime = time_us_32();
             double timeDiff = currTime - rightLastTime;
             double rightSpeed = DISTANCE_PER_PULSE / (timeDiff / 1000000);
-            // printf("R speed: %f\n", rightSpeed);
+            printf("R speed: %f\n", rightSpeed);
             // float diff = controlLoop(desiredSpeed, rightSpeed, &rightIntegral, &rightPrevError) * 10;
             // printf("R diff: %f\n", diff);
             // rightDutyCycle += diff;
@@ -161,8 +170,8 @@ void moveForward()
     gpio_put(INPUT_2_RIGHT, 0);
 
     setSpeed();
-    // gpio_set_irq_enabled_with_callback(ENCODER_LEFT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
-    // gpio_set_irq_enabled_with_callback(ENCODER_RIGHT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
+    //gpio_set_irq_enabled_with_callback(ENCODER_LEFT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
+    //gpio_set_irq_enabled_with_callback(ENCODER_RIGHT, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_encoder_changed_callback);
 }
 
 void moveBackward()
@@ -207,7 +216,7 @@ void turn90Right()
     gpio_put(INPUT_2_LEFT, 0);
     gpio_put(INPUT_1_RIGHT, 0);
     gpio_put(INPUT_2_RIGHT, 1);
-    sleep_ms(ninetyDegreeTime);
+    sleep_ms(rightAngleTime);
     stop();
 }
 
@@ -220,7 +229,7 @@ void turn90Left()
     gpio_put(INPUT_2_LEFT, 1);
     gpio_put(INPUT_1_RIGHT, 1);
     gpio_put(INPUT_2_RIGHT, 0);
-    sleep_ms(ninetyDegreeTime);
+    sleep_ms(leftAngleTime);
     stop();
 }
 
