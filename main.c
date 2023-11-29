@@ -102,6 +102,7 @@ void motorTask(void *pvParameters)
     while (1)
     {
         moveForward();
+        /*
         vTaskDelay(1000);
         stop();
         vTaskDelay(1000);
@@ -112,7 +113,7 @@ void motorTask(void *pvParameters)
         turnLeft();
         vTaskDelay(1000);
         stop();
-        vTaskDelay(1000);
+        vTaskDelay(1000);*/
     }
 }
 
