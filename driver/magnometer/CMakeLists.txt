@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 # Add your source file
 add_executable(magnometer
-    magnometer.c
+    magnometer_driver_demo.c
 )
 
 # Include Pico SDK

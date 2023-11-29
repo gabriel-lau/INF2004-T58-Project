@@ -3,7 +3,7 @@ add_subdirectory(barcode)
 
 # Add your source file
 add_executable(irline
-    irline.c
+    irline_driver_demo.c
 )
 
 # Include Pico SDK

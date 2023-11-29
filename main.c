@@ -20,8 +20,12 @@
 #include "hardware/pwm.h"
 #include "hardware/adc.h"
 #include "hardware/timer.h"
+#include "hardware/i2c.h"
 
-#include "driver/motor/motor.c"
+#include "driver/motor/motor.h"
+#include "driver/magnometer/magnometer.h"
+#include "driver/irline/irline.h"
+#include "driver/ultrasonic/ultrasonic.h"
 
 #include "driver/wifi/wifi.h"
 #include "driver/wifi/tcp_server.h"
@@ -38,11 +42,13 @@
 
 // Message buffer handle
 static MessageBufferHandle_t xBarcodeMessageBuffer;
+static QueueHandle_t xControlQueue;
 
 // Define Tasks
 TaskHandle_t motorTaskHandle;
 TaskHandle_t wifiTaskHandle;
 TaskHandle_t barcodeTaskHandle;
+TaskHandle_t ultrasonicTaskHandle;
 
 // GPIO pins for MOTOR
 int INPUT_1_LEFT = 12;
@@ -55,65 +61,103 @@ uint16_t PWM_LEFT_CYCLE = 32768;
 uint16_t PWM_RIGHT_CYCLE = 32768;
 
 // GPIO pins for ENCODER
-const int ENCODER_LEFT = 15;
-const int ENCODER_RIGHT = 16;
+int ENCODER_LEFT = 15;
+int ENCODER_RIGHT = 16;
 
 // GPIO pins for MAGNOMETER
 const int MAG_SDA = 0;
 const int MAG_SCL = 1;
 
 // GPIO pins for ULTRASONIC
-const int TRIGGER_PIN = 2;
-const int ECHO_PIN = 3;
+int TRIG_PIN = 2;
+int ECHO_PIN = 3;
 
 // GPIO pins for IR
+const uint IR_PIN_RIGHT = 4;
+const uint IR_PIN_LEFT = 5;
 
+void setDir(int distance) // change direction if meet obstacle
+{
+    printf("Distance: %d cm\n", distance);
+    if (distance <= 15)
+    {
+        //printf("%d",distance);
+        //printf("Stop\n");
+        xQueueSend(xControlQueue, "s", portMAX_DELAY);
+    }
+    else 
+    {
+        printf("Forward\n");
+        xQueueSend(xControlQueue, "f", portMAX_DELAY);
+    }
+}
+
+// Handle General motor movements
 void motorTask(void *pvParameters)
 {
-    // Init Left GPIO
-    gpio_init(INPUT_1_LEFT);
-    gpio_init(INPUT_2_LEFT);
-    gpio_init(PWM_LEFT);
+    gpio_init(IR_PIN_LEFT);
+    gpio_set_dir(IR_PIN_LEFT, GPIO_IN);
+    gpio_init(IR_PIN_RIGHT);
+    gpio_set_dir(IR_PIN_RIGHT, GPIO_IN);
 
-    // Init Right GPIO
-    gpio_init(INPUT_1_RIGHT);
-    gpio_init(INPUT_2_RIGHT);
-    gpio_init(PWM_RIGHT);
+    // Setup GPIO pins for MOTOR
+    motorSetup();
 
-    // Set Left GPIO to out power board
-    gpio_set_dir(INPUT_1_LEFT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_LEFT, GPIO_OUT);
-    gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
-
-    // Set Right GPIO to out power board
-    gpio_set_dir(INPUT_1_RIGHT, GPIO_OUT);
-    gpio_set_dir(INPUT_2_RIGHT, GPIO_OUT);
-    gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
-
-    // Find out which PWM slice is connected to GPIO
-    uint slice_num_left = pwm_gpio_to_slice_num(PWM_LEFT);
-    uint slice_num_right = pwm_gpio_to_slice_num(PWM_RIGHT);
-
-    pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
-    pwm_set_gpio_level(PWM_RIGHT, PWM_RIGHT_CYCLE);
-
-    pwm_set_enabled(slice_num_left, true);
-    pwm_set_enabled(slice_num_right, true);
+    char xReceivedChar; // Queue receive char
+    size_t xReceivedBytes;
+    // double currTime = time_us_32();
     while (1)
     {
-        moveForward();
-        /*
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        moveBackward();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);
-        turnLeft();
-        vTaskDelay(1000);
-        stop();
-        vTaskDelay(1000);*/
+        xReceivedBytes = xQueueReceive(xControlQueue, &xReceivedChar, portMAX_DELAY); // Receive from queue if wall detected
+        printf("Received %c\n", xReceivedChar);
+
+        // Check if the queue received a character and 
+        // if 'f', move the car
+        // if 's', stop the car
+        if  (xReceivedChar == 'f')
+        {
+            moveForward();
+        }
+        else if (xReceivedChar == 's')
+        {
+            moveBackward();
+            sleep_ms(500);
+            stop();
+            sleep_ms(500);
+        }
+
+        if(irLine(IR_PIN_LEFT) == 1){ // if left sensor detects a line turn right
+            stop();
+            sleep_ms(1000);
+            turnRight();
+            sleep_ms(300);
+            printf("Turn Right\n");
+        }
+        else if(irLine(IR_PIN_RIGHT) == 1){ // if right sensor detects a line turn left
+            stop();
+            sleep_ms(1000);
+            turnLeft();
+            sleep_ms(300);
+            printf("Turn Left\n");
+        }
+
+        // Set the magnomentere heading
+        magnoSetup();
+        printf("\n");
+        printf("New Heading: %d\n",getHeading());
+        vTaskDelay(500);
+    }
+}
+
+// Task to handle ultrasonic sensor
+void ultrasonicTask(void *pvParameters)
+{
+    // Polling check for wall
+    while (1)
+    {
+        ultraSetup();
+        setDir(getCm(TRIG_PIN, ECHO_PIN));
+        vTaskDelay(200);
     }
 }
 
@@ -230,13 +274,19 @@ void vLaunch(void)
     initialize_mutex();
 
     // Motor Task handle
-    xTaskCreate(motorTask, "MotorTask", configMINIMAL_STACK_SIZE, NULL, 1, &motorTaskHandle);
+    xTaskCreate(motorTask, "motorThread", configMINIMAL_STACK_SIZE, NULL, 8, &motorTaskHandle);
+
+    // Ultrasonic Task handle
+    xTaskCreate(ultrasonicTask, "ultrasonicThread", configMINIMAL_STACK_SIZE, NULL, 8, &ultrasonicTaskHandle);
 
     // Wifi Task handle
     xTaskCreate(wifiTask, "WifiThread", configMINIMAL_STACK_SIZE, NULL, 1, &wifiTaskHandle);
 
     // Barcode Task handle
     xTaskCreate(barcodeTask, "BarcodeThread", configMINIMAL_STACK_SIZE, NULL, 1, &barcodeTaskHandle);
+
+    // Create the control queue
+    xControlQueue = xQueueCreate(10, sizeof(char));
 
     // Create the message buffer
     xBarcodeMessageBuffer = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);

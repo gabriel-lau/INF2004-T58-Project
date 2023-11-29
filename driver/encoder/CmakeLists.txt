@@ -1,5 +1,5 @@
 add_executable(encoder
-        encoder.c
+        encoder_driver_demo.c
         )
 
 # pull in common dependencies and additional pwm hardware support

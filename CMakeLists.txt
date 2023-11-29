@@ -69,8 +69,6 @@ target_compile_definitions(main PRIVATE
 
 target_include_directories(main PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
-        # ${CMAKE_CURRENT_LIST_DIR}/../.. # for our common lwipopts
-        # ${PICO_LWIP_CONTRIB_PATH}/apps/ping
         )
 
 target_link_libraries(main
@@ -81,6 +79,7 @@ target_link_libraries(main
         hardware_adc
         hardware_pwm
         FreeRTOS-Kernel-Heap4 # FreeRTOS kernel and dynamic heap
+        hardware_i2c
         )
 
 # enable usb output, disable uart output

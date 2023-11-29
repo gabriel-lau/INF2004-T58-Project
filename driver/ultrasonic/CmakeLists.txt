@@ -1,5 +1,5 @@
 add_executable(ultrasonic
-    ultrasonic.c
+    ultrasonic_driver_demo.c
         )
 
 # pull in common dependencies and additional pwm hardware support
