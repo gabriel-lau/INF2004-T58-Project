@@ -8,6 +8,7 @@ extern int PWM_RIGHT;
 extern uint16_t PWM_LEFT_CYCLE;
 extern uint16_t PWM_RIGHT_CYCLE;
 
+// code to move forward
 void moveForward()
 {
     pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
@@ -18,6 +19,7 @@ void moveForward()
     gpio_put(INPUT_2_RIGHT, 0);
 }
 
+// code to move backwards
 void moveBackward()
 {
     pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
@@ -28,6 +30,7 @@ void moveBackward()
     gpio_put(INPUT_2_RIGHT, 1);
 }
 
+// code to turn left
 void turnLeft()
 {
     pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
@@ -38,6 +41,7 @@ void turnLeft()
     gpio_put(INPUT_2_RIGHT, 0);
 }
 
+// code to turn right
 void turnRight()
 {
     pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
@@ -48,6 +52,7 @@ void turnRight()
     gpio_put(INPUT_2_RIGHT, 1);
 }
 
+// code to stop moving
 void stop()
 {
     pwm_set_gpio_level(PWM_LEFT, PWM_LEFT_CYCLE);
