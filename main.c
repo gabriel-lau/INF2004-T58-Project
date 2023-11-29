@@ -90,7 +90,7 @@ void motorTask(void *pvParameters)
     // double currTime = time_us_32();
 
     // * MOVE FORWARD
-    
+    /*
     while (1)
     {   
         
@@ -132,21 +132,36 @@ void motorTask(void *pvParameters)
     }
 
     // * 90 DEGREE TURN
-    /*
-    char path[3] = {'r', 'l'};
+    */
+    char path[2] = {'l', 'l'};
     int i = 0;
     while (1)
     {
         moveForward();
         if(irLine(IR_PIN_LEFT) == 1 || irLine(IR_PIN_RIGHT) == 1){
-            stop();
-            sleep_ms(1000);
-            if (i >= sizeof(path))
+            if (i == 2)
             {
-                
+                if(irLine(IR_PIN_LEFT) == 1){
+                    stop();
+                    sleep_ms(1000);
+                    turnRight();
+                    sleep_ms(300);
+                    printf("Turn Right\n");
+                }
+                printf("RIGHT IS HERE\n");
+                // irLine(IR_PIN_RIGHT);
+                if(irLine(IR_PIN_RIGHT) == 1){
+                    stop();
+                    sleep_ms(1000);
+                    turnLeft();
+                    sleep_ms(300);
+                    printf("Turn Left\n");
+                }
             }
             else
             {
+                stop();
+                sleep_ms(1000);
                 if (path[i] == 'l')
                 {
                     moveForward();
@@ -170,7 +185,7 @@ void motorTask(void *pvParameters)
             }
         }
     }
-    */
+    
 }
 
 void ultrasonicTask(void *pvParameters)

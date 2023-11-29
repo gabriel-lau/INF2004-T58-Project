@@ -52,9 +52,9 @@ float desiredSpeed = 15;
 double leftSpeed = 0;
 double rightSpeed = 0;
 double leftDutyCycle = 18750; 
-double rightDutyCycle = 18125; 
-int leftAngleTime = 2000;
-int rightAngleTime = 2300;
+double rightDutyCycle = 17500; 
+int leftAngleTime = 2400;
+int rightAngleTime = 2500;
 
 // PID constants
 // PID gains 
